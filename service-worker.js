@@ -1,4 +1,3 @@
-Voici exactement ce qu'il faut copier, à partir de la ligne qui commence par const :
 const CACHE_NAME = 'badminton-v2';
 const urlsToCache = [
   '/',
