@@ -1,29 +1,37 @@
-html<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#4F46E5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Badminton - Recueil de données</title>
-    
+    <title>Badminton EPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <style>
-        * { -webkit-tap-highlight-color: transparent; }
-        input, textarea { -webkit-user-select: text; user-select: text; }
-        body { overscroll-behavior: none; margin: 0; font-family: system-ui, sans-serif; }
-    </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        // LE CODE COMPLET DE L'APPLICATION IRA ICI
-        // Je vous fournirai le code complet dans le prochain message
+        const { useState, useEffect } = React;
+        
+        function App() {
+            return (
+                <div style={{padding: '20px', textAlign: 'center', minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
+                    <div style={{background: 'white', padding: '40px', borderRadius: '20px', maxWidth: '600px', margin: '50px auto'}}>
+                        <div style={{fontSize: '80px'}}>🏸</div>
+                        <h1 style={{fontSize: '48px', fontWeight: 'bold', color: '#1f2937', marginBottom: '20px'}}>Badminton</h1>
+                        <p style={{fontSize: '24px', color: '#4b5563', marginBottom: '30px'}}>Application installée avec succès !</p>
+                        <div style={{background: '#d1fae5', padding: '20px', borderRadius: '10px', marginTop: '20px'}}>
+                            <p style={{color: '#065f46', fontWeight: 'bold'}}>✅ Ça fonctionne !</p>
+                            <p style={{color: '#047857', fontSize: '14px', marginTop: '10px'}}>Ajoutez cette page à votre écran d'accueil</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
