@@ -4,26 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#047857">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Badminton Pro">
-    <title>Badminton Pro - Recueil de données EPS</title>
+    <title>Badminton Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { 
             -webkit-tap-highlight-color: transparent; 
-            -webkit-touch-callout: none;
             font-family: 'Poppins', system-ui, sans-serif;
         }
-        input, textarea { -webkit-user-select: text; user-select: text; }
         body { 
-            overscroll-behavior: none; 
             margin: 0;
             background: linear-gradient(135deg, #0f766e 0%, #047857 50%, #065f46 100%);
             min-height: 100vh;
@@ -31,55 +23,35 @@
         .glass {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .match-done {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            opacity: 0.7;
-        }
-        .match-pending {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-in {
-            animation: slideIn 0.3s ease-out forwards;
-        }
+        .match-done { background: linear-gradient(135deg, #10b981 0%, #059669 100%); opacity: 0.7; }
+        .match-pending { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
         .badminton-icon {
-            width: 120px;
-            height: 120px;
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            width: 120px; height: 120px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 60px;
-            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
             margin: 0 auto 20px;
         }
-        .stat-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
+        
+        /* PAGE PLEIN ÉCRAN POUR LES ZONES - SOLUTION TABLETTES NEUVES */
+        .page-zones-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #047857, #065f46);
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
         }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        /* CORRECTION CRITIQUE : Modal scrollable pour les zones */
-        .modal-zones {
-            max-height: 80vh !important;
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
-        .modal-zones::-webkit-scrollbar {
-            width: 6px;
-        }
-        .modal-zones::-webkit-scrollbar-thumb {
-            background: rgba(0,0,0,0.3);
-            border-radius: 3px;
+        .page-zones-fullscreen.active {
+            display: flex !important;
         }
     </style>
 </head>
@@ -87,11 +59,9 @@
     <div id="root"></div>
     <script type="text/babel">
         const { useState, useEffect } = React;
+        
+        console.log('🏸 Badminton Pro - VERSION TABLETTES NEUVES (Page plein écran)');
 
-        // Console pour debug
-        console.log('🏸 Badminton Pro v2.0 - Modal CORRIGÉ');
-
-        // Icônes SVG
         const Icon = ({d, className = "w-6 h-6"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>;
         const Users = ({className}) => <Icon className={className} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />;
         const Target = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
@@ -102,10 +72,6 @@
         const RotateCcw = ({className}) => <Icon className={className} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />;
         const ChevronRight = ({className}) => <Icon className={className} d="M9 5l7 7-7 7" />;
         const Trash2 = ({className}) => <Icon className={className} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />;
-        const AlertCircle = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>;
-        const BookOpen = ({className}) => <Icon className={className} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />;
-        const Award = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>;
-        const TrendingUp = ({className}) => <Icon className={className} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />;
         const Edit = ({className}) => <Icon className={className} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />;
         const Save = ({className}) => <Icon className={className} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />;
 
@@ -120,13 +86,13 @@
           const [donnees, setDonnees] = useState({});
           const [classes, setClasses] = useState({});
           const [showDeleteModal, setShowDeleteModal] = useState(false);
-          const [showTerrain, setShowTerrain] = useState(false);
+          const [showTerrain, setShowTerrain] = useState(false); // 'j1', 'j2' ou false
           const [matchsTermines, setMatchsTermines] = useState([]);
           const [showEditMatch, setShowEditMatch] = useState(null);
           const [seances, setSeances] = useState({});
           const [currentSeance, setCurrentSeance] = useState(1);
 
-          // Sauvegarde automatique
+          // Sauvegarde auto
           useEffect(() => {
             const interval = setInterval(() => {
               sauvegarderDonnees();
@@ -147,7 +113,6 @@
             }
           };
 
-          // Chargement
           useEffect(() => {
             const saved = localStorage.getItem('badminton-data');
             if (saved) {
@@ -161,13 +126,10 @@
                 setPoule(data.poule || []);
                 setSeances(data.seances || {});
                 setCurrentSeance(data.currentSeance || 1);
-              } catch(e) {
-                console.error('Erreur chargement:', e);
-              }
+              } catch(e) {}
             }
           }, []);
 
-          // Timer
           useEffect(() => {
             let interval;
             if (timerActif && timer > 0) {
@@ -190,16 +152,13 @@
           const genererOrdreMatchs = (joueurs) => {
             const n = joueurs.length;
             const matchs = [];
-            
             if (n === 2) {
               matchs.push([joueurs[0], joueurs[1]]);
             } else {
               const rounds = n % 2 === 0 ? n - 1 : n;
               const playersPerRound = n % 2 === 0 ? n : n + 1;
-              
               let players = [...joueurs];
               if (n % 2 !== 0) players.push(null);
-
               for (let round = 0; round < rounds; round++) {
                 for (let i = 0; i < playersPerRound / 2; i++) {
                   const j1 = players[i];
@@ -234,15 +193,10 @@
             setDonnees(nouvelleDonnees);
             setPoule(config.joueurs);
             setMatchsTermines([]);
-            
             if (!seances[config.classe]) seances[config.classe] = {};
             if (!seances[config.classe][currentSeance]) {
-              seances[config.classe][currentSeance] = {
-                date: new Date().toISOString(),
-                donnees: nouvelleDonnees
-              };
+              seances[config.classe][currentSeance] = { date: new Date().toISOString(), donnees: nouvelleDonnees };
             }
-            
             setClasses(prev => ({...prev, [config.classe]: nouvelleDonnees}));
             setPhase('selection');
           };
@@ -263,7 +217,6 @@
               alert('Ce match a déjà été joué. Utilisez "Modifier".');
               return;
             }
-
             const pointsMax = config.typeMatch === '11pts' ? 11 : config.typeMatch === '15pts' ? 15 : 999;
             setMatchEnCours({
               joueur1: `${j1.prenom}_${j1.nom}`, joueur2: `${j2.prenom}_${j2.nom}`, 
@@ -283,7 +236,6 @@
             setMatchEnCours(prev => {
               const nouveau = {...prev};
               const isDouble = type !== 'normal';
-              
               setHistoriquePoints(hist => [...hist, {joueur, type, zone, etat: JSON.parse(JSON.stringify(prev))}]);
 
               if (joueur === 'j1') {
@@ -347,7 +299,6 @@
 
           const terminerMatch = (mortSubite = false, gagnant = null) => {
             if (!matchEnCours) return;
-
             const {joueur1, joueur2, prenomJ1, nomJ1, prenomJ2, nomJ2, scoreJ1, scoreJ2, statsJ1, statsJ2, pointsDoublesJ1, pointsDoublesJ2, terrainJ1, terrainJ2} = matchEnCours;
             const victoireJ1 = mortSubite ? gagnant === 'j1' : scoreJ1 > scoreJ2;
             const victoireJ2 = mortSubite ? gagnant === 'j2' : scoreJ2 > scoreJ1;
@@ -360,7 +311,6 @@
 
             setDonnees(prev => {
               const nouveau = {...prev};
-              
               nouveau[joueur1].matchsJoues++;
               nouveau[joueur1].pointsMarques += scoreJ1;
               nouveau[joueur1].pointsEncaisses += scoreJ2;
@@ -369,7 +319,6 @@
               nouveau[joueur1].zonesLibres += statsJ1.zonesLibres;
               nouveau[joueur1].pointsDoubles += pointsDoublesJ1;
               nouveau[joueur1].pointsTerrain.push(...terrainJ1);
-
               if (victoireJ1) {
                 nouveau[joueur1].matchsGagnes++;
                 nouveau[joueur1].victoires.push({
@@ -386,7 +335,6 @@
               nouveau[joueur2].zonesLibres += statsJ2.zonesLibres;
               nouveau[joueur2].pointsDoubles += pointsDoublesJ2;
               nouveau[joueur2].pointsTerrain.push(...terrainJ2);
-
               if (victoireJ2) {
                 nouveau[joueur2].matchsGagnes++;
                 nouveau[joueur2].victoires.push({
@@ -394,14 +342,12 @@
                   bonus: pointsDoublesJ2, indice: getIndiceReussite(pointsDoublesJ2, true)
                 });
               } else if (mortSubite) nouveau[joueur2].defaitesMortSubite++;
-
               return nouveau;
             });
 
             if (seances[config.classe]?.[currentSeance]) {
               seances[config.classe][currentSeance].donnees = donnees;
             }
-
             setClasses(prev => ({...prev, [config.classe]: donnees}));
             setTimerActif(false);
             setMatchEnCours(null);
@@ -418,20 +364,16 @@
             setDonnees(prev => {
               const nouveau = {...prev};
               const match = showEditMatch;
-              
               nouveau[match.j1].pointsMarques -= match.scoreJ1;
               nouveau[match.j1].pointsEncaisses -= match.scoreJ2;
               nouveau[match.j2].pointsMarques -= match.scoreJ2;
               nouveau[match.j2].pointsEncaisses -= match.scoreJ1;
-
               nouveau[match.j1].pointsMarques += newScoreJ1;
               nouveau[match.j1].pointsEncaisses += newScoreJ2;
               nouveau[match.j2].pointsMarques += newScoreJ2;
               nouveau[match.j2].pointsEncaisses += newScoreJ1;
-
               const nouvelleVictoireJ1 = newScoreJ1 > newScoreJ2;
               const ancienneVictoireJ1 = match.victoireJ1;
-
               if (nouvelleVictoireJ1 !== ancienneVictoireJ1) {
                 if (nouvelleVictoireJ1) {
                   nouveau[match.j1].matchsGagnes++;
@@ -441,79 +383,31 @@
                   nouveau[match.j2].matchsGagnes++;
                 }
               }
-
               return nouveau;
             });
-
             setMatchsTermines(prev => prev.map(m => 
               m.key === showEditMatch.key 
                 ? {...m, scoreJ1: newScoreJ1, scoreJ2: newScoreJ2, victoireJ1: newScoreJ1 > newScoreJ2}
                 : m
             ));
-
             setShowEditMatch(null);
             sauvegarderDonnees();
           };
 
-          const TerrainBadminton = ({ points, joueurNom }) => {
-            const zones = [
-              { id: 1, x: 10, y: 10, w: 35, h: 35 },
-              { id: 2, x: 55, y: 10, w: 35, h: 35 },
-              { id: 3, x: 10, y: 55, w: 35, h: 35 },
-              { id: 4, x: 55, y: 55, w: 35, h: 35 }
-            ];
-
-            const countZone = (zoneId) => points.filter(p => p === zoneId).length;
-
-            return (
-              <div className="bg-gradient-to-br from-green-700 to-green-600 rounded-lg p-4 border-4 border-white shadow-lg">
-                <h4 className="text-center font-bold mb-2 text-sm text-white">{joueurNom}</h4>
-                <svg viewBox="0 0 100 100" className="w-full max-w-xs mx-auto bg-green-800 rounded">
-                  <rect x="5" y="5" width="90" height="90" fill="#1a5e1a" stroke="#fff" strokeWidth="2"/>
-                  <line x1="50" y1="5" x2="50" y2="95" stroke="#fff" strokeWidth="1.5"/>
-                  <line x1="5" y1="50" x2="95" y2="50" stroke="#fff" strokeWidth="2"/>
-                  <line x1="5" y1="30" x2="95" y2="30" stroke="#fff" strokeWidth="1" strokeDasharray="2,2"/>
-                  <line x1="5" y1="70" x2="95" y2="70" stroke="#fff" strokeWidth="1" strokeDasharray="2,2"/>
-                  <rect x="48" y="5" width="4" height="90" fill="#333" opacity="0.3"/>
-                  
-                  {zones.map(zone => {
-                    const count = countZone(zone.id);
-                    return (
-                      <g key={zone.id}>
-                        <rect x={zone.x} y={zone.y} width={zone.w} height={zone.h} 
-                          fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
-                        {count > 0 && (
-                          <>
-                            <circle cx={zone.x + zone.w/2} cy={zone.y + zone.h/2} r="14" 
-                              fill="#FFD700" stroke="#FFA500" strokeWidth="2"/>
-                            <text x={zone.x + zone.w/2} y={zone.y + zone.h/2 - 2} 
-                              textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">🏸</text>
-                            <text x={zone.x + zone.w/2} y={zone.y + zone.h/2 + 10} 
-                              textAnchor="middle" fontSize="12" fontWeight="bold" fill="#000">{count}</text>
-                          </>
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
-              </div>
-            );
-          };
-
-          // PAGE D'ACCUEIL
+          // SIMPLIFICATION : Juste les phases essentielles pour le test
           if (phase === 'classe') {
             return (
               <div className="min-h-screen p-4">
-                <div className="max-w-2xl mx-auto animate-slide-in">
+                <div className="max-w-2xl mx-auto">
                   <div className="glass rounded-3xl shadow-2xl p-8">
                     <div className="text-center mb-8">
                       <div className="badminton-icon">🏸</div>
                       <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
                         Badminton Pro
                       </h1>
-                      <p className="text-gray-600 font-medium">Application EPS - Recueil de données</p>
+                      <p className="text-gray-600 font-medium">Version TABLETTES NEUVES</p>
+                      <p className="text-xs text-emerald-600 mt-2">✓ Page plein écran pour les zones</p>
                     </div>
-                    
                     <div className="mb-6">
                       <label className="block text-sm font-bold text-gray-700 mb-3">📚 Nom de la classe</label>
                       <input 
@@ -521,110 +415,31 @@
                         value={config.classe} 
                         onChange={(e) => setConfig({...config, classe: e.target.value})}
                         className="w-full px-5 py-4 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-lg font-medium shadow-sm"
-                        placeholder="Ex: 3ème A, 2nde 5..." 
+                        placeholder="Ex: 3ème A" 
                       />
                     </div>
-
-                    {Object.keys(classes).length > 0 && (
-                      <div className="mb-6">
-                        <div className="flex justify-between items-center mb-3">
-                          <p className="text-sm font-bold text-gray-700">📂 Classes existantes</p>
-                          <button 
-                            onClick={() => setShowDeleteModal(true)} 
-                            className="text-red-600 text-sm flex items-center gap-1 font-medium hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" /> Gérer
-                          </button>
-                        </div>
-                        <div className="space-y-2">
-                          {Object.keys(classes).map(cls => (
-                            <button 
-                              key={cls} 
-                              onClick={() => { 
-                                setConfig({...config, classe: cls}); 
-                                setDonnees(classes[cls]); 
-                              }}
-                              className="w-full text-left px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-xl border-2 border-emerald-200 transition-all shadow-sm"
-                            >
-                              <span className="font-bold text-emerald-700">{cls}</span>
-                              <span className="text-sm text-gray-600 ml-2">
-                                ({Object.keys(classes[cls]).length} élèves)
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     <button 
                       onClick={() => setPhase('config')} 
                       disabled={!config.classe.trim()}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition shadow-lg disabled:shadow-none"
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition shadow-lg"
                     >
                       Continuer →
                     </button>
                   </div>
                 </div>
-
-                {showDeleteModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="glass rounded-2xl p-6 max-w-md w-full">
-                      <h3 className="text-xl font-bold mb-4">🗑️ Supprimer des classes</h3>
-                      <div className="space-y-2 mb-6">
-                        {Object.keys(classes).length === 0 ? (
-                          <p className="text-gray-500 text-center py-4">Aucune classe</p>
-                        ) : Object.keys(classes).map(cls => (
-                          <div key={cls} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                            <span className="font-medium">{cls}</span>
-                            <button 
-                              onClick={() => {
-                                if (confirm(`Supprimer "${cls}" ?`)) {
-                                  const updated = {...classes};
-                                  delete updated[cls];
-                                  setClasses(updated);
-                                  if (Object.keys(updated).length === 0) {
-                                    localStorage.removeItem('badminton-data');
-                                    setShowDeleteModal(false);
-                                  }
-                                  sauvegarderDonnees();
-                                  alert(`Classe "${cls}" supprimée`);
-                                }
-                              }} 
-                              className="text-red-600 p-2 hover:bg-red-50 rounded transition"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                      <button 
-                        onClick={() => setShowDeleteModal(false)} 
-                        className="w-full bg-gray-600 text-white py-3 rounded-lg font-bold hover:bg-gray-700 transition"
-                      >
-                        Fermer
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           }
 
-          // CONFIGURATION
           if (phase === 'config') {
             return (
               <div className="min-h-screen p-4">
-                <div className="max-w-2xl mx-auto animate-slide-in">
+                <div className="max-w-2xl mx-auto">
                   <div className="glass rounded-3xl shadow-2xl p-8">
-                    <div className="text-center mb-8">
-                      <Users className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
-                      <h1 className="text-3xl font-bold text-gray-800 mb-2">{config.classe}</h1>
-                      <p className="text-gray-600 font-medium">Configuration de la poule</p>
-                    </div>
-
+                    <h1 className="text-3xl font-bold text-center mb-6">{config.classe}</h1>
                     {config.nombreJoueurs === 0 ? (
                       <div>
-                        <p className="text-center font-bold mb-6 text-lg">Combien d'élèves dans la poule ?</p>
+                        <p className="text-center font-bold mb-6">Nombre d'élèves ?</p>
                         <div className="grid grid-cols-4 gap-3">
                           {[2, 3, 4, 5].map(nb => (
                             <button 
@@ -633,7 +448,7 @@
                                 setConfig({...config, nombreJoueurs: nb, joueurs: []});
                                 for (let i = 0; i < nb; i++) setTimeout(() => ajouterJoueur(), i * 50);
                               }}
-                              className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                              className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl hover:shadow-xl transition"
                             >
                               {nb}
                             </button>
@@ -642,9 +457,6 @@
                       </div>
                     ) : (
                       <div>
-                        <p className="text-center font-bold mb-4 text-lg">
-                          Élèves ({config.joueurs.length}/{config.nombreJoueurs})
-                        </p>
                         <div className="space-y-3 mb-6">
                           {config.joueurs.map((joueur, index) => (
                             <div key={index} className="grid grid-cols-2 gap-2">
@@ -652,35 +464,42 @@
                                 type="text" 
                                 value={joueur.prenom} 
                                 onChange={(e) => modifierJoueur(index, 'prenom', e.target.value)}
-                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none font-medium"
+                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none"
                                 placeholder="Prénom" 
                               />
                               <input 
                                 type="text" 
                                 value={joueur.nom} 
                                 onChange={(e) => modifierJoueur(index, 'nom', e.target.value)}
-                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none font-medium"
+                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none"
                                 placeholder="Nom" 
                               />
                             </div>
                           ))}
                         </div>
-
                         <div className="flex gap-3">
                           <button 
-                            onClick={() => {
-                              setConfig({...config, nombreJoueurs: 0, joueurs: []});
-                            }} 
-                            className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold hover:bg-gray-600 transition"
+                            onClick={() => setConfig({...config, nombreJoueurs: 0, joueurs: []})} 
+                            className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold"
                           >
                             ← Retour
                           </button>
                           <button 
-                            onClick={() => setPhase('objetEnseignement')} 
+                            onClick={() => {
+                              // Config rapide pour test
+                              setConfig({
+                                ...config,
+                                objetEnseignement: 'zones',
+                                typeMatch: '11pts',
+                                pointsDoubles: true,
+                                mortSubite: false
+                              });
+                              demarrerPoule();
+                            }} 
                             disabled={config.joueurs.some(j => !j.nom.trim() || !j.prenom.trim())}
-                            className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition"
+                            className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300"
                           >
-                            Suivant →
+                            Démarrer test →
                           </button>
                         </div>
                       </div>
@@ -691,220 +510,13 @@
             );
           }
 
-          // OBJET D'ENSEIGNEMENT
-          if (phase === 'objetEnseignement') {
-            return (
-              <div className="min-h-screen p-4">
-                <div className="max-w-2xl mx-auto animate-slide-in">
-                  <div className="glass rounded-3xl shadow-2xl p-8">
-                    <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                      🎯 Objet d'enseignement
-                    </h2>
-                    
-                    <div className="space-y-3 mb-6">
-                      <button 
-                        onClick={() => setConfig({...config, objetEnseignement: 'smash'})}
-                        className={`w-full p-5 rounded-2xl border-2 transition shadow-md hover:shadow-lg ${
-                          config.objetEnseignement === 'smash' 
-                            ? 'border-purple-600 bg-gradient-to-r from-purple-50 to-pink-50' 
-                            : 'border-gray-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <Zap className="w-8 h-8 text-purple-600" />
-                          <div className="text-left flex-1">
-                            <div className="font-bold text-lg">⚡ Travail du smash annoncé</div>
-                            <div className="text-sm text-gray-600">Crier "smash" avant de frapper</div>
-                          </div>
-                        </div>
-                      </button>
-
-                      <button 
-                        onClick={() => setConfig({...config, objetEnseignement: 'zones'})}
-                        className={`w-full p-5 rounded-2xl border-2 transition shadow-md hover:shadow-lg ${
-                          config.objetEnseignement === 'zones' 
-                            ? 'border-orange-600 bg-gradient-to-r from-orange-50 to-red-50' 
-                            : 'border-gray-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <Target className="w-8 h-8 text-orange-600" />
-                          <div className="text-left flex-1">
-                            <div className="font-bold text-lg">🎯 Viser les zones dangereuses</div>
-                            <div className="text-sm text-gray-600">Zones avant et arrière du terrain</div>
-                          </div>
-                        </div>
-                      </button>
-
-                      <button 
-                        onClick={() => setConfig({...config, objetEnseignement: 'espaces'})}
-                        className={`w-full p-5 rounded-2xl border-2 transition shadow-md hover:shadow-lg ${
-                          config.objetEnseignement === 'espaces' 
-                            ? 'border-green-600 bg-gradient-to-r from-green-50 to-teal-50' 
-                            : 'border-gray-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <MapPin className="w-8 h-8 text-green-600" />
-                          <div className="text-left flex-1">
-                            <div className="font-bold text-lg">📍 Viser les espaces libres</div>
-                            <div className="text-sm text-gray-600">Où l'adversaire n'est pas</div>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => setPhase('config')} 
-                        className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold hover:bg-gray-600 transition"
-                      >
-                        ← Retour
-                      </button>
-                      <button 
-                        onClick={() => setPhase('typeMatch')} 
-                        disabled={!config.objetEnseignement}
-                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition"
-                      >
-                        Suivant →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          // TYPE DE MATCH
-          if (phase === 'typeMatch') {
-            return (
-              <div className="min-h-screen p-4">
-                <div className="max-w-2xl mx-auto animate-slide-in">
-                  <div className="glass rounded-3xl shadow-2xl p-8">
-                    <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                      ⚙️ Configuration du match
-                    </h2>
-
-                    <div className="mb-6">
-                      <h3 className="font-bold text-gray-700 mb-3 text-lg">Type de match</h3>
-                      <div className="space-y-3">
-                        {[
-                          {value: '3min', icon: Clock, title: 'Match en 3 minutes', desc: 'Durée limitée'},
-                          {value: '11pts', icon: Target, title: 'Match en 11 points', desc: 'Changement à 6 points'},
-                          {value: '15pts', icon: Target, title: 'Match en 15 points', desc: 'Changement à 8 points'}
-                        ].map(({value, icon: Icon, title, desc}) => (
-                          <button 
-                            key={value}
-                            onClick={() => setConfig({...config, typeMatch: value})}
-                            className={`w-full p-4 rounded-xl border-2 transition shadow-md hover:shadow-lg ${
-                              config.typeMatch === value 
-                                ? 'border-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50' 
-                                : 'border-gray-300 bg-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Icon className="w-7 h-7 text-emerald-600" />
-                              <div className="text-left">
-                                <div className="font-bold">{title}</div>
-                                <div className="text-sm text-gray-600">{desc}</div>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mb-6">
-                      <h3 className="font-bold text-gray-700 mb-3 text-lg">Options de jeu</h3>
-                      <div className="space-y-3">
-                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer transition hover:bg-blue-50 border-gray-300 shadow-sm">
-                          <input 
-                            type="checkbox" 
-                            checked={config.pointsDoubles} 
-                            onChange={(e) => setConfig({...config, pointsDoubles: e.target.checked})}
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer" 
-                          />
-                          <div className="ml-3 flex items-center gap-3 flex-1">
-                            <Award className="w-6 h-6 text-blue-600" />
-                            <div>
-                              <div className="font-bold text-gray-800">🏆 Points doubles</div>
-                              <div className="text-sm text-gray-600">
-                                {config.pointsDoubles ? "✓ Les actions de l'objet valent 2 points" : "Toutes les actions valent 1 point"}
-                              </div>
-                            </div>
-                          </div>
-                        </label>
-
-                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer transition hover:bg-red-50 border-gray-300 shadow-sm">
-                          <input 
-                            type="checkbox" 
-                            checked={config.mortSubite} 
-                            onChange={(e) => setConfig({...config, mortSubite: e.target.checked})}
-                            className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500 cursor-pointer" 
-                          />
-                          <div className="ml-3 flex items-center gap-3 flex-1">
-                            <AlertCircle className="w-6 h-6 text-red-600" />
-                            <div>
-                              <div className="font-bold text-gray-800">⚠️ Mort subite</div>
-                              <div className="text-sm text-gray-600">Défaite après 3 points doubles encaissés</div>
-                            </div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => setPhase('objetEnseignement')} 
-                        className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold hover:bg-gray-600 transition"
-                      >
-                        ← Retour
-                      </button>
-                      <button 
-                        onClick={demarrerPoule} 
-                        disabled={!config.typeMatch}
-                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition"
-                      >
-                        🚀 Démarrer
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          // SÉLECTION DES MATCHS
           if (phase === 'selection') {
             const matchsOrdonnes = genererOrdreMatchs(poule);
-
             return (
               <div className="min-h-screen p-4">
-                <div className="max-w-4xl mx-auto animate-slide-in">
-                  <div className="glass rounded-3xl shadow-2xl p-6 mb-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h2 className="text-2xl font-bold text-emerald-700">{config.classe}</h2>
-                        <p className="text-sm text-gray-600">Séance #{currentSeance}</p>
-                      </div>
-                      <div className="text-right text-sm text-gray-600">
-                        {config.objetEnseignement === 'smash' && '⚡ Smash'}
-                        {config.objetEnseignement === 'zones' && '🎯 Zones'}
-                        {config.objetEnseignement === 'espaces' && '📍 Espaces'}
-                        {' | '}{config.pointsDoubles ? '×2 pts' : '×1 pt'}{' | '}
-                        {config.typeMatch === '3min' ? '⏱️ 3min' : config.typeMatch === '11pts' ? '11pts' : '15pts'}
-                        {config.mortSubite && ' ⚠️'}
-                      </div>
-                    </div>
-
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="font-bold text-lg">📋 Ordre des matchs</h3>
-                      <div className="text-sm">
-                        <span className="text-green-600 font-bold">{matchsTermines.length}</span>
-                        <span className="text-gray-600"> / {matchsOrdonnes.length} matchs</span>
-                      </div>
-                    </div>
-
+                <div className="max-w-4xl mx-auto">
+                  <div className="glass rounded-3xl p-6 mb-6">
+                    <h2 className="text-2xl font-bold mb-4">{config.classe}</h2>
                     <div className="grid gap-3">
                       {matchsOrdonnes.map((match, index) => {
                         const [j1, j2] = match;
@@ -913,35 +525,23 @@
                         const matchData = matchsTermines.find(m => m.key === matchKey);
 
                         return (
-                          <div key={index} className={`${estTermine ? 'match-done' : 'match-pending'} text-white p-4 rounded-xl flex items-center justify-between shadow-lg transition-all`}>
+                          <div key={index} className={`${estTermine ? 'match-done' : 'match-pending'} text-white p-4 rounded-xl flex items-center justify-between`}>
                             <div className="flex items-center gap-3">
-                              <div className="bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                              <div className="bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">
                                 {index + 1}
                               </div>
                               <span className="font-bold">
-                                {j1.prenom} {j1.nom} vs {j2.prenom} {j2.nom}
+                                {j1.prenom} vs {j2.prenom}
                               </span>
                             </div>
-                            
                             {estTermine ? (
-                              <div className="flex items-center gap-3">
-                                <span className="font-bold text-lg">
-                                  ✓ {matchData.scoreJ1} - {matchData.scoreJ2}
-                                </span>
-                                <button
-                                  onClick={() => modifierMatch(matchData)}
-                                  className="bg-white text-emerald-600 p-2 rounded-lg hover:bg-emerald-50 transition"
-                                  title="Modifier"
-                                >
-                                  <Edit className="w-5 h-5" />
-                                </button>
-                              </div>
+                              <span className="font-bold">✓ {matchData.scoreJ1}-{matchData.scoreJ2}</span>
                             ) : (
                               <button
                                 onClick={() => demarrerMatch(j1, j2)}
-                                className="bg-white text-blue-600 px-5 py-2 rounded-lg font-bold hover:bg-blue-50 transition flex items-center gap-2"
+                                className="bg-white text-blue-600 px-5 py-2 rounded-lg font-bold"
                               >
-                                Jouer <ChevronRight className="w-5 h-5" />
+                                Jouer
                               </button>
                             )}
                           </div>
@@ -949,360 +549,199 @@
                       })}
                     </div>
                   </div>
-
-                  <div className="glass rounded-3xl shadow-2xl p-6 mb-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold flex items-center gap-2">
-                        <Trophy className="w-6 h-6 text-yellow-500" />Classement
-                      </h2>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {Object.values(donnees)
-                        .sort((a, b) => {
-                          if (b.matchsGagnes !== a.matchsGagnes) return b.matchsGagnes - a.matchsGagnes;
-                          return (b.pointsMarques - b.pointsEncaisses) - (a.pointsMarques - a.pointsEncaisses);
-                        })
-                        .map((joueur, index) => {
-                          const diff = joueur.pointsMarques - joueur.pointsEncaisses;
-                          return (
-                            <div key={`${joueur.prenom}_${joueur.nom}`} className="flex justify-between items-center bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl border-2 border-gray-200 shadow-sm">
-                              <div className="flex items-center gap-4">
-                                <div className={`font-bold text-2xl w-8 ${
-                                  index === 0 ? 'text-yellow-500' :
-                                  index === 1 ? 'text-gray-400' :
-                                  index === 2 ? 'text-amber-600' :
-                                  'text-gray-500'
-                                }`}>
-                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
-                                </div>
-                                <span className="font-bold text-lg">{joueur.prenom} {joueur.nom}</span>
-                              </div>
-                              <div className="flex gap-4 text-sm items-center">
-                                <span className="text-green-600 font-bold text-lg">{joueur.matchsGagnes}V</span>
-                                <span className="text-red-600 font-bold">{joueur.matchsJoues - joueur.matchsGagnes}D</span>
-                                <span className={`font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                  ({diff > 0 ? '+' : ''}{diff})
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button 
-                      onClick={() => {
-                        setCurrentSeance(prev => prev + 1);
-                        sauvegarderDonnees();
-                        alert('💾 Séance sauvegardée !');
-                      }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition shadow-lg"
-                    >
-                      <Save className="w-5 h-5" />Sauvegarder
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (confirm('Nouvelle poule ?')) {
-                          sauvegarderDonnees();
-                          setConfig({ classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false });
-                          setPoule([]); setMatchEnCours(null); setHistoriquePoints([]); setDonnees({}); setMatchsTermines([]);
-                          setPhase('classe');
-                        }
-                      }}
-                      className="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-red-700 hover:to-pink-700 transition shadow-lg"
-                    >
-                      <RotateCcw className="w-5 h-5" />Nouvelle poule
-                    </button>
-                  </div>
                 </div>
-
-                {/* Modal modification */}
-                {showEditMatch && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="glass rounded-2xl p-6 max-w-md w-full">
-                      <h3 className="text-xl font-bold mb-4">✏️ Modifier le résultat</h3>
-                      <div className="mb-4">
-                        <p className="text-sm text-gray-600 mb-4">Match: {donnees[showEditMatch.j1]?.prenom} {donnees[showEditMatch.j1]?.nom} vs {donnees[showEditMatch.j2]?.prenom} {donnees[showEditMatch.j2]?.nom}</p>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j1]?.prenom}</label>
-                            <input 
-                              type="number" 
-                              id="newScoreJ1"
-                              defaultValue={showEditMatch.scoreJ1}
-                              className="w-full px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-center text-2xl font-bold"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j2]?.prenom}</label>
-                            <input 
-                              type="number" 
-                              id="newScoreJ2"
-                              defaultValue={showEditMatch.scoreJ2}
-                              className="w-full px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-center text-2xl font-bold"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={() => setShowEditMatch(null)}
-                          className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition"
-                        >
-                          Annuler
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const newScoreJ1 = parseInt(document.getElementById('newScoreJ1').value);
-                            const newScoreJ2 = parseInt(document.getElementById('newScoreJ2').value);
-                            sauvegarderModificationMatch(newScoreJ1, newScoreJ2);
-                          }}
-                          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 transition"
-                        >
-                          💾 Sauvegarder
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           }
 
-          // PENDANT LE JEU
           if (phase === 'jeu' && matchEnCours) {
-            const getButtonForObjet = (joueur) => {
-              const pointsText = config.pointsDoubles ? '+2' : '+1';
-              if (config.objetEnseignement === 'smash') {
-                return (
-                  <button 
-                    onClick={() => ajouterPoint(joueur, 'smashAnnonce')}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition transform hover:scale-105"
-                  >
-                    <Zap className="w-6 h-6" />Smash annoncé ({pointsText})
-                  </button>
-                );
-              } else {
-                return (
-                  <button 
-                    onClick={() => setShowTerrain(joueur)}
-                    className={`w-full ${config.objetEnseignement === 'zones' ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-green-500 to-teal-500'} text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition transform hover:scale-105`}
-                  >
-                    {config.objetEnseignement === 'zones' ? <Target className="w-6 h-6" /> : <MapPin className="w-6 h-6" />}
-                    {config.objetEnseignement === 'zones' ? 'Zone dangereuse' : 'Zone libre'} ({pointsText})
-                  </button>
-                );
-              }
-            };
-
             return (
               <div className="min-h-screen p-4">
-                <div className="max-w-6xl mx-auto animate-slide-in">
-                  {config.typeMatch === '3min' && (
-                    <div className="glass rounded-2xl p-4 mb-6 text-center">
-                      <div className={`inline-block px-8 py-3 rounded-full font-bold text-3xl ${timer <= 30 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                        ⏱️ {formatTimer(timer)}
-                      </div>
-                      <button 
-                        onClick={() => setTimerActif(!timerActif)} 
-                        className="block mx-auto mt-3 text-sm text-emerald-600 font-bold hover:text-emerald-700"
-                      >
-                        {timerActif ? '⏸️ Pause' : '▶️ Reprendre'}
-                      </button>
-                    </div>
-                  )}
-
-                  {config.mortSubite && (
-                    <div className="glass rounded-2xl p-4 mb-6">
-                      <h4 className="text-center font-bold mb-3 text-red-600">⚠️ Mort Subite</h4>
-                      <div className="flex justify-center gap-12">
-                        <div className="text-center">
-                          <div className="text-sm text-gray-700 font-bold mb-2">{matchEnCours.prenomJ1}</div>
-                          <div className="flex gap-1">
-                            {[1, 2, 3].map(i => (
-                              <div key={i} className={`w-4 h-4 rounded-full ${i <= matchEnCours.pointsDoublesJ2 ? 'bg-red-500' : 'bg-gray-300'}`} />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-sm text-gray-700 font-bold mb-2">{matchEnCours.prenomJ2}</div>
-                          <div className="flex gap-1">
-                            {[1, 2, 3].map(i => (
-                              <div key={i} className={`w-4 h-4 rounded-full ${i <= matchEnCours.pointsDoublesJ1 ? 'bg-red-500' : 'bg-gray-300'}`} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="glass rounded-3xl shadow-2xl p-8 mb-6">
-                    <div className="grid grid-cols-3 gap-6 items-center">
+                <div className="max-w-6xl mx-auto">
+                  <div className="glass rounded-3xl p-8 mb-6">
+                    <div className="grid grid-cols-3 gap-6 items-center mb-6">
                       <div className="text-center">
-                        <h3 className="text-2xl font-bold mb-3 text-blue-600">{matchEnCours.prenomJ1} {matchEnCours.nomJ1}</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-blue-600">{matchEnCours.prenomJ1}</h3>
                         <div className="text-7xl font-extrabold text-blue-600">{matchEnCours.scoreJ1}</div>
                       </div>
+                      <div className="text-center text-5xl font-extrabold text-gray-400">VS</div>
                       <div className="text-center">
-                        <div className="text-5xl font-extrabold text-gray-400">VS</div>
-                        {matchEnCours.coteChange && (
-                          <div className="text-xs text-green-600 font-bold mt-3 bg-green-50 rounded-full px-3 py-1 inline-block">
-                            ✓ Côté changé
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-center">
-                        <h3 className="text-2xl font-bold mb-3 text-red-600">{matchEnCours.prenomJ2} {matchEnCours.nomJ2}</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-red-600">{matchEnCours.prenomJ2}</h3>
                         <div className="text-7xl font-extrabold text-red-600">{matchEnCours.scoreJ2}</div>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div className="glass rounded-2xl shadow-xl p-6">
-                      <h3 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                        {matchEnCours.prenomJ1}
-                      </h3>
+                    <div className="glass rounded-2xl p-6">
+                      <h3 className="text-xl font-bold text-blue-600 mb-4">{matchEnCours.prenomJ1}</h3>
                       <div className="space-y-3">
                         <button 
                           onClick={() => ajouterPoint('j1', 'normal')} 
-                          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold"
                         >
                           Point normal (+1)
                         </button>
-                        {getButtonForObjet('j1')}
-                      </div>
-                      <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-                        <p className="text-sm text-gray-700 font-bold mb-2">📊 Statistiques</p>
-                        <div className="grid grid-cols-3 gap-3 text-xs">
-                          <div className="text-center p-2 bg-white rounded-lg">
-                            <div className="text-2xl font-bold text-orange-600">{matchEnCours.statsJ1.zonesDangereuses}</div>
-                            <div className="text-gray-600">ZD</div>
-                          </div>
-                          <div className="text-center p-2 bg-white rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ1.smashAnnonces}</div>
-                            <div className="text-gray-600">SA</div>
-                          </div>
-                          <div className="text-center p-2 bg-white rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ1.zonesLibres}</div>
-                            <div className="text-gray-600">ZL</div>
-                          </div>
-                        </div>
+                        <button 
+                          onClick={() => setShowTerrain('j1')}
+                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-5 rounded-xl font-bold"
+                        >
+                          Zone dangereuse (+{config.pointsDoubles ? '2' : '1'})
+                        </button>
                       </div>
                     </div>
 
-                    <div className="glass rounded-2xl shadow-xl p-6">
-                      <h3 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-600"></div>
-                        {matchEnCours.prenomJ2}
-                      </h3>
+                    <div className="glass rounded-2xl p-6">
+                      <h3 className="text-xl font-bold text-red-600 mb-4">{matchEnCours.prenomJ2}</h3>
                       <div className="space-y-3">
                         <button 
                           onClick={() => ajouterPoint('j2', 'normal')} 
-                          className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                          className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-5 rounded-xl font-bold"
                         >
                           Point normal (+1)
                         </button>
-                        {getButtonForObjet('j2')}
-                      </div>
-                      <div className="mt-4 p-4 bg-red-50 rounded-xl">
-                        <p className="text-sm text-gray-700 font-bold mb-2">📊 Statistiques</p>
-                        <div className="grid grid-cols-3 gap-3 text-xs">
-                          <div className="text-center p-2 bg-white rounded-lg">
-                            <div className="text-2xl font-bold text-orange-600">{matchEnCours.statsJ2.zonesDangereuses}</div>
-                            <div className="text-gray-600">ZD</div>
-                          </div>
-                          <div className="text-center p-2 bg-white rounded-lg">
-                            <div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ2.smashAnnonces}</div>
-                            <div className="text-gray-600">SA</div>
-                          </div>
-                          <div className="text-center p-2 bg-white rounded-lg">
-                            <div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ2.zonesLibres}</div>
-                            <div className="text-gray-600">ZL</div>
-                          </div>
-                        </div>
+                        <button 
+                          onClick={() => setShowTerrain('j2')}
+                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-5 rounded-xl font-bold"
+                        >
+                          Zone dangereuse (+{config.pointsDoubles ? '2' : '1'})
+                        </button>
                       </div>
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <button 
-                      onClick={() => { 
-                        if (confirm('Terminer ce match ?')) terminerMatch(); 
-                      }}
-                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition"
+                      onClick={() => { if (confirm('Terminer ?')) terminerMatch(); }}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold"
                     >
-                      ✓ Terminer le match
+                      ✓ Terminer
                     </button>
                     <button 
                       onClick={annulerDernierPoint} 
-                      disabled={historiquePoints.length === 0}
-                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-5 rounded-xl font-bold text-lg disabled:from-gray-300 disabled:to-gray-400 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition disabled:shadow-none"
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-5 rounded-xl font-bold"
                     >
-                      <RotateCcw className="w-5 h-5" />
-                      Annuler dernier point ({historiquePoints.length})
+                      ← Annuler ({historiquePoints.length})
                     </button>
                   </div>
-
-                  <button 
-                    onClick={() => {
-                      if (confirm('Annuler ce match ?')) { 
-                        setMatchEnCours(null); 
-                        setHistoriquePoints([]); 
-                        setTimerActif(false); 
-                        setPhase('selection'); 
-                      }
-                    }}
-                    className="w-full mt-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-4 rounded-xl font-bold hover:from-gray-700 hover:to-gray-800 transition"
-                  >
-                    ← Retour à la sélection
-                  </button>
                 </div>
 
-                {/* MODAL DES ZONES - CORRIGÉ */}
-                {showTerrain && (
-                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-3 z-50" onClick={() => setShowTerrain(false)}>
-                    <div className="glass rounded-2xl w-full max-w-sm modal-zones" onClick={e => e.stopPropagation()}>
-                      <div className="p-5">
-                        <h3 className="text-xl font-bold mb-4 text-center sticky top-0 bg-white pb-3 z-10">
-                          🏸 Sélectionnez la zone
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 gap-3 mb-4">
-                          {[
-                            {id: 1, label: 'Avant Gauche', emoji: '⬆️', color: 'from-green-400 to-green-500'},
-                            {id: 2, label: 'Avant Droite', emoji: '⬆️', color: 'from-green-400 to-green-500'},
-                            {id: 3, label: 'Arrière Gauche', emoji: '⬇️', color: 'from-green-600 to-green-700'},
-                            {id: 4, label: 'Arrière Droite', emoji: '⬇️', color: 'from-green-600 to-green-700'}
-                          ].map(zone => (
-                            <button 
-                              key={zone.id}
-                              onClick={() => {
-                                const type = config.objetEnseignement === 'zones' ? 'zoneDangereuse' : 'zoneLibre';
-                                ajouterPointAvecZone(showTerrain, type, zone.id);
-                                setShowTerrain(false);
-                              }}
-                              className={`bg-gradient-to-br ${zone.color} text-white py-8 rounded-xl font-bold shadow-lg active:scale-95 transition`}
-                            >
-                              <div className="text-3xl mb-1">{zone.emoji}</div>
-                              <div className="text-sm">{zone.label}</div>
-                              <div className="text-2xl mt-1">{zone.id}</div>
-                            </button>
-                          ))}
-                        </div>
-
-                        <button 
-                          onClick={() => setShowTerrain(false)} 
-                          className="w-full bg-gray-600 text-white py-3 rounded-xl font-bold hover:bg-gray-700 transition"
-                        >
-                          ✕ Annuler
-                        </button>
-                      </div>
-                    </div>
+                {/* PAGE PLEIN ÉCRAN POUR LES ZONES - LA SOLUTION ! */}
+                <div className={`page-zones-fullscreen ${showTerrain ? 'active' : ''}`}>
+                  <div style={{color: 'white', textAlign: 'center', fontSize: '24px', fontWeight: 'bold', marginBottom: '20px'}}>
+                    🏸 Sélectionnez la zone
                   </div>
-                )}
+                  
+                  <div style={{flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px'}}>
+                    <button 
+                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 1); setShowTerrain(false); }}
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '15px',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        padding: '20px',
+                        minHeight: '140px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{fontSize: '40px'}}>⬆️</div>
+                      <div>Avant Gauche</div>
+                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>1</div>
+                    </button>
+                    
+                    <button 
+                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 2); setShowTerrain(false); }}
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '15px',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        padding: '20px',
+                        minHeight: '140px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{fontSize: '40px'}}>⬆️</div>
+                      <div>Avant Droite</div>
+                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>2</div>
+                    </button>
+                    
+                    <button 
+                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 3); setShowTerrain(false); }}
+                      style={{
+                        background: 'linear-gradient(135deg, #047857, #065f46)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '15px',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        padding: '20px',
+                        minHeight: '140px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{fontSize: '40px'}}>⬇️</div>
+                      <div>Arrière Gauche</div>
+                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>3</div>
+                    </button>
+                    
+                    <button 
+                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 4); setShowTerrain(false); }}
+                      style={{
+                        background: 'linear-gradient(135deg, #047857, #065f46)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '15px',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        padding: '20px',
+                        minHeight: '140px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      <div style={{fontSize: '40px'}}>⬇️</div>
+                      <div>Arrière Droite</div>
+                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>4</div>
+                    </button>
+                  </div>
+                  
+                  <button 
+                    onClick={() => setShowTerrain(false)}
+                    style={{
+                      width: '100%',
+                      background: '#6b7280',
+                      color: 'white',
+                      border: 'none',
+                      padding: '20px',
+                      borderRadius: '15px',
+                      fontSize: '18px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    ✕ Annuler
+                  </button>
+                </div>
               </div>
             );
           }
@@ -1310,10 +749,8 @@
           return null;
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<BadmintonTracker />);
-        
-        console.log('✅ Application chargée avec succès - Modal zones CORRIGÉ');
+        ReactDOM.createRoot(document.getElementById('root')).render(<BadmintonTracker />);
+        console.log('✅ VERSION TABLETTES NEUVES - Page plein écran activée');
     </script>
 </body>
 </html>
