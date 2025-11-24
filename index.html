@@ -3,36 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#4F46E5">
+    <meta name="theme-color" content="#047857">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Badminton">
-    <title>Badminton - Recueil de données EPS</title>
-    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-title" content="Badminton Pro">
+    <title>Badminton Pro - Recueil de données EPS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            -webkit-touch-callout: none;
+            font-family: 'Poppins', system-ui, sans-serif;
+        }
         input, textarea { -webkit-user-select: text; user-select: text; }
-        body { overscroll-behavior: none; margin: 0; font-family: system-ui, sans-serif; }
+        body { 
+            overscroll-behavior: none; 
+            margin: 0;
+            background: linear-gradient(135deg, #0f766e 0%, #047857 50%, #065f46 100%);
+            min-height: 100vh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .match-done {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            opacity: 0.7;
+        }
+        .match-pending {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        .badminton-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            box-shadow: 0 10px 30px rgba(251, 191, 36, 0.3);
+            margin: 0 auto 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
-   <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(reg => console.log('Service Worker enregistré'))
-                    .catch(err => console.log('Erreur Service Worker:', err));
-            });
-        }
-    </script> 
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect } = React;
-        
+        const { useState, useEffect, useRef } = React;
+
+        // Icônes SVG
         const Icon = ({d, className = "w-6 h-6"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>;
         const Users = ({className}) => <Icon className={className} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />;
         const Target = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
@@ -47,6 +90,9 @@
         const BookOpen = ({className}) => <Icon className={className} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />;
         const Award = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>;
         const TrendingUp = ({className}) => <Icon className={className} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />;
+        const Edit = ({className}) => <Icon className={className} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />;
+        const Save = ({className}) => <Icon className={className} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />;
+        const BarChart = ({className}) => <Icon className={className} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />;
 
         function BadmintonTracker() {
           const [config, setConfig] = useState({classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false});
@@ -60,24 +106,70 @@
           const [classes, setClasses] = useState({});
           const [showDeleteModal, setShowDeleteModal] = useState(false);
           const [showTerrain, setShowTerrain] = useState(false);
+          const [matchsTermines, setMatchsTermines] = useState([]);
+          const [showEditMatch, setShowEditMatch] = useState(null);
+          const [seances, setSeances] = useState({});
+          const [currentSeance, setCurrentSeance] = useState(1);
 
+          // Sauvegarde automatique toutes les 5 secondes
           useEffect(() => {
-            const saved = localStorage.getItem('badminton-classes');
-            if (saved) try { setClasses(JSON.parse(saved)); } catch(e) {}
+            const interval = setInterval(() => {
+              sauvegarderDonnees();
+            }, 5000);
+            return () => clearInterval(interval);
+          }, [donnees, matchsTermines, config, seances]);
+
+          const sauvegarderDonnees = () => {
+            try {
+              const dataToSave = {
+                classes,
+                config,
+                donnees,
+                matchsTermines,
+                phase,
+                poule,
+                seances,
+                currentSeance,
+                timestamp: new Date().toISOString()
+              };
+              localStorage.setItem('badminton-data', JSON.stringify(dataToSave));
+              localStorage.setItem('badminton-backup', JSON.stringify(dataToSave)); // Backup
+            } catch (e) {
+              console.error('Erreur sauvegarde:', e);
+            }
+          };
+
+          // Chargement initial
+          useEffect(() => {
+            const saved = localStorage.getItem('badminton-data');
+            if (saved) {
+              try {
+                const data = JSON.parse(saved);
+                setClasses(data.classes || {});
+                setConfig(data.config || config);
+                setDonnees(data.donnees || {});
+                setMatchsTermines(data.matchsTermines || []);
+                setPhase(data.phase || 'classe');
+                setPoule(data.poule || []);
+                setSeances(data.seances || {});
+                setCurrentSeance(data.currentSeance || 1);
+              } catch(e) {
+                console.error('Erreur chargement:', e);
+              }
+            }
           }, []);
 
-          useEffect(() => {
-            if (Object.keys(classes).length > 0) {
-              localStorage.setItem('badminton-classes', JSON.stringify(classes));
-            }
-          }, [classes]);
-
+          // Timer
           useEffect(() => {
             let interval;
             if (timerActif && timer > 0) {
               interval = setInterval(() => {
                 setTimer(prev => {
-                  if (prev <= 1) { setTimerActif(false); alert('Temps écoulé !'); return 0; }
+                  if (prev <= 1) { 
+                    setTimerActif(false); 
+                    alert('Temps écoulé !'); 
+                    return 0; 
+                  }
                   return prev - 1;
                 });
               }, 1000);
@@ -86,7 +178,39 @@
           }, [timerActif, timer]);
 
           const formatTimer = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
-          
+
+          // Génération optimale de l'ordre des matchs (round-robin)
+          const genererOrdreMatchs = (joueurs) => {
+            const n = joueurs.length;
+            const matchs = [];
+            
+            if (n === 2) {
+              matchs.push([joueurs[0], joueurs[1]]);
+            } else {
+              // Algorithme round-robin pour minimiser les temps d'attente
+              const rounds = n % 2 === 0 ? n - 1 : n;
+              const playersPerRound = n % 2 === 0 ? n : n + 1;
+              
+              let players = [...joueurs];
+              if (n % 2 !== 0) {
+                players.push(null); // Joueur fantôme pour nombre impair
+              }
+
+              for (let round = 0; round < rounds; round++) {
+                for (let i = 0; i < playersPerRound / 2; i++) {
+                  const j1 = players[i];
+                  const j2 = players[playersPerRound - 1 - i];
+                  if (j1 && j2) {
+                    matchs.push([j1, j2]);
+                  }
+                }
+                // Rotation (le premier reste fixe)
+                players = [players[0], players[playersPerRound - 1], ...players.slice(1, playersPerRound - 1)];
+              }
+            }
+            return matchs;
+          };
+
           const ajouterJoueur = () => {
             setConfig(prev => ({...prev, joueurs: [...prev.joueurs, { nom: `Joueur${prev.joueurs.length + 1}`, prenom: '' }]}));
           };
@@ -100,29 +224,83 @@
           const demarrerPoule = () => {
             const nouvelleDonnees = {};
             config.joueurs.forEach(j => {
-              nouvelleDonnees[j.nom] = {
-                nom: j.nom, prenom: j.prenom, zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0,
-                pointsDoubles: 0, matchsJoues: 0, matchsGagnes: 0, pointsMarques: 0, pointsEncaisses: 0,
-                defaitesMortSubite: 0, victoires: [], pointsTerrain: []
+              nouvelleDonnees[`${j.prenom}_${j.nom}`] = {
+                nom: j.nom, 
+                prenom: j.prenom, 
+                zonesDangereuses: 0, 
+                smashAnnonces: 0, 
+                zonesLibres: 0,
+                pointsDoubles: 0, 
+                matchsJoues: 0, 
+                matchsGagnes: 0, 
+                pointsMarques: 0, 
+                pointsEncaisses: 0,
+                defaitesMortSubite: 0, 
+                victoires: [], 
+                pointsTerrain: []
               };
             });
             setDonnees(nouvelleDonnees);
             setPoule(config.joueurs);
+            setMatchsTermines([]);
+            
+            // Initialiser la séance
+            if (!seances[config.classe]) {
+              seances[config.classe] = {};
+            }
+            if (!seances[config.classe][currentSeance]) {
+              seances[config.classe][currentSeance] = {
+                date: new Date().toISOString(),
+                donnees: nouvelleDonnees
+              };
+            }
+            
             setClasses(prev => ({...prev, [config.classe]: nouvelleDonnees}));
             setPhase('selection');
           };
 
+          const getMatchKey = (j1, j2) => {
+            const key1 = `${j1.prenom}_${j1.nom}`;
+            const key2 = `${j2.prenom}_${j2.nom}`;
+            return [key1, key2].sort().join('-vs-');
+          };
+
+          const isMatchTermine = (j1, j2) => {
+            const key = getMatchKey(j1, j2);
+            return matchsTermines.some(m => m.key === key);
+          };
+
           const demarrerMatch = (j1, j2) => {
+            if (isMatchTermine(j1, j2)) {
+              alert('Ce match a déjà été joué. Utilisez "Modifier" pour corriger le résultat.');
+              return;
+            }
+
             const pointsMax = config.typeMatch === '11pts' ? 11 : config.typeMatch === '15pts' ? 15 : 999;
             setMatchEnCours({
-              joueur1: j1.nom, joueur2: j2.nom, prenomJ1: j1.prenom, prenomJ2: j2.prenom,
-              scoreJ1: 0, scoreJ2: 0, pointsDoublesJ1: 0, pointsDoublesJ2: 0,
+              joueur1: `${j1.prenom}_${j1.nom}`, 
+              joueur2: `${j2.prenom}_${j2.nom}`, 
+              prenomJ1: j1.prenom, 
+              nomJ1: j1.nom,
+              prenomJ2: j2.prenom, 
+              nomJ2: j2.nom,
+              scoreJ1: 0, 
+              scoreJ2: 0, 
+              pointsDoublesJ1: 0, 
+              pointsDoublesJ2: 0,
               statsJ1: { zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0 },
               statsJ2: { zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0 },
-              terrainJ1: [], terrainJ2: [], pointsMax, changementCote: Math.floor(pointsMax / 2), coteChange: false
+              terrainJ1: [], 
+              terrainJ2: [], 
+              pointsMax, 
+              changementCote: Math.floor(pointsMax / 2), 
+              coteChange: false
             });
             setHistoriquePoints([]);
-            if (config.typeMatch === '3min') { setTimer(180); setTimerActif(true); }
+            if (config.typeMatch === '3min') { 
+              setTimer(180); 
+              setTimerActif(true); 
+            }
             setPhase('jeu');
           };
 
@@ -132,7 +310,7 @@
               const isDouble = type !== 'normal';
               
               setHistoriquePoints(hist => [...hist, {joueur, type, zone, etat: JSON.parse(JSON.stringify(prev))}]);
-              
+
               if (joueur === 'j1') {
                 nouveau.scoreJ1++;
                 if (isDouble && config.pointsDoubles) nouveau.scoreJ1++;
@@ -152,15 +330,21 @@
               }
 
               if (config.mortSubite) {
-                if (nouveau.pointsDoublesJ2 >= 3) { setTimeout(() => terminerMatch(true, 'j1'), 100); return nouveau; }
-                if (nouveau.pointsDoublesJ1 >= 3) { setTimeout(() => terminerMatch(true, 'j2'), 100); return nouveau; }
+                if (nouveau.pointsDoublesJ2 >= 3) { 
+                  setTimeout(() => terminerMatch(true, 'j1'), 100); 
+                  return nouveau; 
+                }
+                if (nouveau.pointsDoublesJ1 >= 3) { 
+                  setTimeout(() => terminerMatch(true, 'j2'), 100); 
+                  return nouveau; 
+                }
               }
 
               if (!nouveau.coteChange && config.typeMatch !== '3min') {
                 const total = nouveau.scoreJ1 + nouveau.scoreJ2;
                 if (total >= nouveau.changementCote) {
                   nouveau.coteChange = true;
-                  setTimeout(() => alert('Changement de côté !'), 100);
+                  setTimeout(() => alert('🔄 Changement de côté !'), 100);
                 }
               }
 
@@ -169,7 +353,7 @@
                   setTimeout(() => terminerMatch(), 100);
                 }
               }
-              
+
               return nouveau;
             });
           };
@@ -177,7 +361,10 @@
           const ajouterPoint = (joueur, type) => ajouterPointAvecZone(joueur, type, null);
 
           const annulerDernierPoint = () => {
-            if (historiquePoints.length === 0) { alert('Aucun point à annuler'); return; }
+            if (historiquePoints.length === 0) { 
+              alert('Aucun point à annuler'); 
+              return; 
+            }
             const dernierPoint = historiquePoints[historiquePoints.length - 1];
             setMatchEnCours(dernierPoint.etat);
             setHistoriquePoints(hist => hist.slice(0, -1));
@@ -194,14 +381,32 @@
 
           const terminerMatch = (mortSubite = false, gagnant = null) => {
             if (!matchEnCours) return;
-            
-            const {joueur1, joueur2, prenomJ1, prenomJ2, scoreJ1, scoreJ2, statsJ1, statsJ2, pointsDoublesJ1, pointsDoublesJ2, terrainJ1, terrainJ2} = matchEnCours;
+
+            const {joueur1, joueur2, prenomJ1, nomJ1, prenomJ2, nomJ2, scoreJ1, scoreJ2, statsJ1, statsJ2, pointsDoublesJ1, pointsDoublesJ2, terrainJ1, terrainJ2} = matchEnCours;
             const victoireJ1 = mortSubite ? gagnant === 'j1' : scoreJ1 > scoreJ2;
             const victoireJ2 = mortSubite ? gagnant === 'j2' : scoreJ2 > scoreJ1;
-            
+
+            // Enregistrer le match terminé
+            const matchKey = getMatchKey({prenom: prenomJ1, nom: nomJ1}, {prenom: prenomJ2, nom: nomJ2});
+            setMatchsTermines(prev => [...prev, {
+              key: matchKey,
+              j1: joueur1,
+              j2: joueur2,
+              scoreJ1,
+              scoreJ2,
+              statsJ1,
+              statsJ2,
+              pointsDoublesJ1,
+              pointsDoublesJ2,
+              victoireJ1,
+              mortSubite,
+              date: new Date().toISOString()
+            }]);
+
             setDonnees(prev => {
               const nouveau = {...prev};
               
+              // Mise à jour joueur 1
               nouveau[joueur1].matchsJoues++;
               nouveau[joueur1].pointsMarques += scoreJ1;
               nouveau[joueur1].pointsEncaisses += scoreJ2;
@@ -210,17 +415,20 @@
               nouveau[joueur1].zonesLibres += statsJ1.zonesLibres;
               nouveau[joueur1].pointsDoubles += pointsDoublesJ1;
               nouveau[joueur1].pointsTerrain.push(...terrainJ1);
-              
+
               if (victoireJ1) {
                 nouveau[joueur1].matchsGagnes++;
                 nouveau[joueur1].victoires.push({
-                  adversaire: `${prenomJ2} ${joueur2}`,
+                  adversaire: `${prenomJ2} ${nomJ2}`,
                   score: `${scoreJ1}-${scoreJ2}`,
                   bonus: pointsDoublesJ1,
                   indice: getIndiceReussite(pointsDoublesJ1, true)
                 });
-              } else if (mortSubite) nouveau[joueur1].defaitesMortSubite++;
-              
+              } else if (mortSubite) {
+                nouveau[joueur1].defaitesMortSubite++;
+              }
+
+              // Mise à jour joueur 2
               nouveau[joueur2].matchsJoues++;
               nouveau[joueur2].pointsMarques += scoreJ2;
               nouveau[joueur2].pointsEncaisses += scoreJ1;
@@ -229,34 +437,93 @@
               nouveau[joueur2].zonesLibres += statsJ2.zonesLibres;
               nouveau[joueur2].pointsDoubles += pointsDoublesJ2;
               nouveau[joueur2].pointsTerrain.push(...terrainJ2);
-              
+
               if (victoireJ2) {
                 nouveau[joueur2].matchsGagnes++;
                 nouveau[joueur2].victoires.push({
-                  adversaire: `${prenomJ1} ${joueur1}`,
+                  adversaire: `${prenomJ1} ${nomJ1}`,
                   score: `${scoreJ2}-${scoreJ1}`,
                   bonus: pointsDoublesJ2,
                   indice: getIndiceReussite(pointsDoublesJ2, true)
                 });
-              } else if (mortSubite) nouveau[joueur2].defaitesMortSubite++;
-              
+              } else if (mortSubite) {
+                nouveau[joueur2].defaitesMortSubite++;
+              }
+
               return nouveau;
             });
-            
+
+            // Sauvegarder dans la séance
+            if (seances[config.classe] && seances[config.classe][currentSeance]) {
+              seances[config.classe][currentSeance].donnees = donnees;
+            }
+
             setClasses(prev => ({...prev, [config.classe]: donnees}));
             setTimerActif(false);
             setMatchEnCours(null);
             setHistoriquePoints([]);
             setPhase('selection');
+            sauvegarderDonnees();
+          };
+
+          const modifierMatch = (match) => {
+            setShowEditMatch(match);
+          };
+
+          const sauvegarderModificationMatch = (newScoreJ1, newScoreJ2) => {
+            // Logique de modification du match
+            setDonnees(prev => {
+              const nouveau = {...prev};
+              const match = showEditMatch;
+              
+              // Annuler les anciens scores
+              nouveau[match.j1].pointsMarques -= match.scoreJ1;
+              nouveau[match.j1].pointsEncaisses -= match.scoreJ2;
+              nouveau[match.j2].pointsMarques -= match.scoreJ2;
+              nouveau[match.j2].pointsEncaisses -= match.scoreJ1;
+
+              // Ajouter les nouveaux scores
+              nouveau[match.j1].pointsMarques += newScoreJ1;
+              nouveau[match.j1].pointsEncaisses += newScoreJ2;
+              nouveau[match.j2].pointsMarques += newScoreJ2;
+              nouveau[match.j2].pointsEncaisses += newScoreJ1;
+
+              // Recalculer les victoires
+              const nouvelleVictoireJ1 = newScoreJ1 > newScoreJ2;
+              const ancienneVictoireJ1 = match.victoireJ1;
+
+              if (nouvelleVictoireJ1 !== ancienneVictoireJ1) {
+                if (nouvelleVictoireJ1) {
+                  nouveau[match.j1].matchsGagnes++;
+                  nouveau[match.j2].matchsGagnes--;
+                } else {
+                  nouveau[match.j1].matchsGagnes--;
+                  nouveau[match.j2].matchsGagnes++;
+                }
+              }
+
+              return nouveau;
+            });
+
+            // Mettre à jour l'historique des matchs
+            setMatchsTermines(prev => prev.map(m => 
+              m.key === showEditMatch.key 
+                ? {...m, scoreJ1: newScoreJ1, scoreJ2: newScoreJ2, victoireJ1: newScoreJ1 > newScoreJ2}
+                : m
+            ));
+
+            setShowEditMatch(null);
+            sauvegarderDonnees();
           };
 
           const TerrainBadminton = ({ points, joueurNom }) => {
             const zones = [
-              { id: 1, x: 10, y: 10, w: 35, h: 35 },
-              { id: 2, x: 55, y: 10, w: 35, h: 35 },
-              { id: 3, x: 10, y: 55, w: 35, h: 35 },
-              { id: 4, x: 55, y: 55, w: 35, h: 35 }
+              { id: 1, x: 10, y: 10, w: 35, h: 35, label: 'Avant\nGauche' },
+              { id: 2, x: 55, y: 10, w: 35, h: 35, label: 'Avant\nDroite' },
+              { id: 3, x: 10, y: 55, w: 35, h: 35, label: 'Arrière\nGauche' },
+              { id: 4, x: 55, y: 55, w: 35, h: 35, label: 'Arrière\nDroite' }
             ];
+
             const countZone = (zoneId) => points.filter(p => p === zoneId).length;
 
             return (
@@ -291,98 +558,120 @@
                   })}
                 </svg>
                 <div className="grid grid-cols-2 gap-1 mt-3 text-xs">
-                  <div className="bg-white bg-opacity-20 p-2 rounded text-white font-semibold">
-                    <span className="block text-center">⬆️ Avant G</span>
-                    <span className="block text-center text-lg">{countZone(1)}</span>
-                  </div>
-                  <div className="bg-white bg-opacity-20 p-2 rounded text-white font-semibold">
-                    <span className="block text-center">⬆️ Avant D</span>
-                    <span className="block text-center text-lg">{countZone(2)}</span>
-                  </div>
-                  <div className="bg-white bg-opacity-20 p-2 rounded text-white font-semibold">
-                    <span className="block text-center">⬇️ Arrière G</span>
-                    <span className="block text-center text-lg">{countZone(3)}</span>
-                  </div>
-                  <div className="bg-white bg-opacity-20 p-2 rounded text-white font-semibold">
-                    <span className="block text-center">⬇️ Arrière D</span>
-                    <span className="block text-center text-lg">{countZone(4)}</span>
-                  </div>
+                  {zones.map(zone => (
+                    <div key={zone.id} className="bg-white bg-opacity-20 p-2 rounded text-white font-semibold">
+                      <span className="block text-center whitespace-pre-line">{zone.label}</span>
+                      <span className="block text-center text-lg">{countZone(zone.id)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             );
           };
 
+          // PAGE D'ACCUEIL
           if (phase === 'classe') {
             return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="min-h-screen p-4">
+                <div className="max-w-2xl mx-auto animate-slide-in">
+                  <div className="glass rounded-3xl shadow-2xl p-8">
                     <div className="text-center mb-8">
-                      <BookOpen className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
-                      <h1 className="text-4xl font-bold text-gray-800 mb-2">Badminton</h1>
-                      <p className="text-gray-600">Gestion par classe</p>
+                      <div className="badminton-icon">🏸</div>
+                      <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
+                        Badminton Pro
+                      </h1>
+                      <p className="text-gray-600 font-medium">Application EPS - Recueil de données</p>
                     </div>
+                    
                     <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la classe</label>
-                      <input type="text" value={config.classe} onChange={(e) => setConfig({...config, classe: e.target.value})}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                        placeholder="Ex: 3ème A, 2nde 5..." />
+                      <label className="block text-sm font-bold text-gray-700 mb-3">📚 Nom de la classe</label>
+                      <input 
+                        type="text" 
+                        value={config.classe} 
+                        onChange={(e) => setConfig({...config, classe: e.target.value})}
+                        className="w-full px-5 py-4 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-lg font-medium shadow-sm"
+                        placeholder="Ex: 3ème A, 2nde 5..." 
+                      />
                     </div>
+
                     {Object.keys(classes).length > 0 && (
                       <div className="mb-6">
                         <div className="flex justify-between items-center mb-3">
-                          <p className="text-sm font-medium text-gray-700">Classes existantes</p>
-                          <button onClick={() => setShowDeleteModal(true)} className="text-red-600 text-sm flex items-center gap-1">
+                          <p className="text-sm font-bold text-gray-700">📂 Classes existantes</p>
+                          <button 
+                            onClick={() => setShowDeleteModal(true)} 
+                            className="text-red-600 text-sm flex items-center gap-1 font-medium hover:text-red-700"
+                          >
                             <Trash2 className="w-4 h-4" /> Gérer
                           </button>
                         </div>
                         <div className="space-y-2">
                           {Object.keys(classes).map(cls => (
-                            <button key={cls} onClick={() => { setConfig({...config, classe: cls}); setDonnees(classes[cls]); }}
-                              className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200">
-                              <span className="font-semibold">{cls}</span>
-                              <span className="text-sm text-gray-500 ml-2">({Object.keys(classes[cls]).length} élèves)</span>
+                            <button 
+                              key={cls} 
+                              onClick={() => { 
+                                setConfig({...config, classe: cls}); 
+                                setDonnees(classes[cls]); 
+                              }}
+                              className="w-full text-left px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 rounded-xl border-2 border-emerald-200 transition-all shadow-sm"
+                            >
+                              <span className="font-bold text-emerald-700">{cls}</span>
+                              <span className="text-sm text-gray-600 ml-2">
+                                ({Object.keys(classes[cls]).length} élèves)
+                              </span>
                             </button>
                           ))}
                         </div>
                       </div>
                     )}
-                    <button onClick={() => setPhase('config')} disabled={!config.classe.trim()}
-                      className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-300 transition">
-                      Continuer
+
+                    <button 
+                      onClick={() => setPhase('config')} 
+                      disabled={!config.classe.trim()}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition shadow-lg disabled:shadow-none"
+                    >
+                      Continuer →
                     </button>
                   </div>
                 </div>
+
                 {showDeleteModal && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                      <h3 className="text-xl font-bold mb-4">Supprimer des classes</h3>
+                    <div className="glass rounded-2xl p-6 max-w-md w-full">
+                      <h3 className="text-xl font-bold mb-4">🗑️ Supprimer des classes</h3>
                       <div className="space-y-2 mb-6">
                         {Object.keys(classes).length === 0 ? (
                           <p className="text-gray-500 text-center py-4">Aucune classe</p>
                         ) : Object.keys(classes).map(cls => (
                           <div key={cls} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                            <span>{cls}</span>
-                            <button onClick={() => {
-                              if (confirm(`Supprimer ${cls} ?`)) {
-                                const updated = {...classes};
-                                delete updated[cls];
-                                setClasses(updated);
-                                if (Object.keys(updated).length === 0) {
-                                  localStorage.removeItem('badminton-classes');
-                                  setShowDeleteModal(false);
-                                } else {
-                                  localStorage.setItem('badminton-classes', JSON.stringify(updated));
+                            <span className="font-medium">{cls}</span>
+                            <button 
+                              onClick={() => {
+                                if (confirm(`Supprimer "${cls}" ?`)) {
+                                  const updated = {...classes};
+                                  delete updated[cls];
+                                  setClasses(updated);
+                                  if (Object.keys(updated).length === 0) {
+                                    localStorage.removeItem('badminton-data');
+                                    setShowDeleteModal(false);
+                                  }
+                                  sauvegarderDonnees();
+                                  alert(`Classe "${cls}" supprimée`);
                                 }
-                                alert(`Classe "${cls}" supprimée`);
-                              }
-                            }} className="text-red-600 p-2 hover:bg-red-50 rounded">
+                              }} 
+                              className="text-red-600 p-2 hover:bg-red-50 rounded transition"
+                            >
                               <Trash2 className="w-5 h-5" />
                             </button>
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => setShowDeleteModal(false)} className="w-full bg-gray-600 text-white py-2 rounded-lg">Fermer</button>
+                      <button 
+                        onClick={() => setShowDeleteModal(false)} 
+                        className="w-full bg-gray-600 text-white py-3 rounded-lg font-bold hover:bg-gray-700 transition"
+                      >
+                        Fermer
+                      </button>
                     </div>
                   </div>
                 )}
@@ -390,26 +679,31 @@
             );
           }
 
+          // CONFIGURATION DES JOUEURS
           if (phase === 'config') {
             return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-8">
+              <div className="min-h-screen p-4">
+                <div className="max-w-2xl mx-auto animate-slide-in">
+                  <div className="glass rounded-3xl shadow-2xl p-8">
                     <div className="text-center mb-8">
-                      <Users className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+                      <Users className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
                       <h1 className="text-3xl font-bold text-gray-800 mb-2">{config.classe}</h1>
-                      <p className="text-gray-600">Configuration de la poule</p>
+                      <p className="text-gray-600 font-medium">Configuration de la poule</p>
                     </div>
+
                     {config.nombreJoueurs === 0 ? (
                       <div>
-                        <p className="text-center font-medium mb-6">Combien d'élèves dans la poule ?</p>
+                        <p className="text-center font-bold mb-6 text-lg">Combien d'élèves dans la poule ?</p>
                         <div className="grid grid-cols-4 gap-3">
                           {[2, 3, 4, 5].map(nb => (
-                            <button key={nb} onClick={() => {
+                            <button 
+                              key={nb} 
+                              onClick={() => {
                                 setConfig({...config, nombreJoueurs: nb, joueurs: []});
                                 for (let i = 0; i < nb; i++) setTimeout(() => ajouterJoueur(), i * 50);
                               }}
-                              className="bg-indigo-600 text-white py-6 rounded-lg font-bold text-2xl hover:bg-indigo-700">
+                              className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                            >
                               {nb}
                             </button>
                           ))}
@@ -417,24 +711,46 @@
                       </div>
                     ) : (
                       <div>
-                        <p className="text-center font-medium mb-4">Élèves ({config.joueurs.length}/{config.nombreJoueurs})</p>
+                        <p className="text-center font-bold mb-4 text-lg">
+                          Élèves ({config.joueurs.length}/{config.nombreJoueurs})
+                        </p>
                         <div className="space-y-3 mb-6">
                           {config.joueurs.map((joueur, index) => (
                             <div key={index} className="grid grid-cols-2 gap-2">
-                              <input type="text" value={joueur.nom} onChange={(e) => modifierJoueur(index, 'nom', e.target.value)}
-                                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                                placeholder="Nom" />
-                              <input type="text" value={joueur.prenom} onChange={(e) => modifierJoueur(index, 'prenom', e.target.value)}
-                                className="px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none"
-                                placeholder="Prénom" />
+                              <input 
+                                type="text" 
+                                value={joueur.prenom} 
+                                onChange={(e) => modifierJoueur(index, 'prenom', e.target.value)}
+                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none font-medium"
+                                placeholder="Prénom" 
+                              />
+                              <input 
+                                type="text" 
+                                value={joueur.nom} 
+                                onChange={(e) => modifierJoueur(index, 'nom', e.target.value)}
+                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none font-medium"
+                                placeholder="Nom" 
+                              />
                             </div>
                           ))}
                         </div>
+
                         <div className="flex gap-3">
-                          <button onClick={() => setPhase('classe')} className="flex-1
-                          bg-gray-500 text-white py-3 rounded-lg font-semibold">Retour</button>
-                          <button onClick={() => setPhase('objetEnseignement')} disabled={config.joueurs.some(j => !j.nom.trim() || !j.prenom.trim())}
-                            className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold disabled:bg-gray-300">Suivant</button>
+                          <button 
+                            onClick={() => {
+                              setConfig({...config, nombreJoueurs: 0, joueurs: []});
+                            }} 
+                            className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold hover:bg-gray-600 transition"
+                          >
+                            ← Retour
+                          </button>
+                          <button 
+                            onClick={() => setPhase('objetEnseignement')} 
+                            disabled={config.joueurs.some(j => !j.nom.trim() || !j.prenom.trim())}
+                            className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition"
+                          >
+                            Suivant →
+                          </button>
                         </div>
                       </div>
                     )}
@@ -444,48 +760,83 @@
             );
           }
 
+          // OBJET D'ENSEIGNEMENT
           if (phase === 'objetEnseignement') {
             return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-8">
-                    <h2 className="text-2xl font-bold text-center mb-6">Objet d'enseignement</h2>
+              <div className="min-h-screen p-4">
+                <div className="max-w-2xl mx-auto animate-slide-in">
+                  <div className="glass rounded-3xl shadow-2xl p-8">
+                    <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                      🎯 Objet d'enseignement
+                    </h2>
+                    
                     <div className="space-y-3 mb-6">
-                      <button onClick={() => setConfig({...config, objetEnseignement: 'smash'})}
-                        className={`w-full p-4 rounded-lg border-2 transition ${config.objetEnseignement === 'smash' ? 'border-purple-600 bg-purple-50' : 'border-gray-300'}`}>
-                        <div className="flex items-center gap-3">
-                          <Zap className="w-6 h-6 text-purple-600" />
+                      <button 
+                        onClick={() => setConfig({...config, objetEnseignement: 'smash'})}
+                        className={`w-full p-5 rounded-2xl border-2 transition shadow-md hover:shadow-lg ${
+                          config.objetEnseignement === 'smash' 
+                            ? 'border-purple-600 bg-gradient-to-r from-purple-50 to-pink-50' 
+                            : 'border-gray-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <Zap className="w-8 h-8 text-purple-600" />
                           <div className="text-left flex-1">
-                            <div className="font-bold">Travail du smash annoncé</div>
+                            <div className="font-bold text-lg">⚡ Travail du smash annoncé</div>
                             <div className="text-sm text-gray-600">Crier "smash" avant de frapper</div>
                           </div>
                         </div>
                       </button>
-                      <button onClick={() => setConfig({...config, objetEnseignement: 'zones'})}
-                        className={`w-full p-4 rounded-lg border-2 transition ${config.objetEnseignement === 'zones' ? 'border-orange-600 bg-orange-50' : 'border-gray-300'}`}>
-                        <div className="flex items-center gap-3">
-                          <Target className="w-6 h-6 text-orange-600" />
+
+                      <button 
+                        onClick={() => setConfig({...config, objetEnseignement: 'zones'})}
+                        className={`w-full p-5 rounded-2xl border-2 transition shadow-md hover:shadow-lg ${
+                          config.objetEnseignement === 'zones' 
+                            ? 'border-orange-600 bg-gradient-to-r from-orange-50 to-red-50' 
+                            : 'border-gray-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <Target className="w-8 h-8 text-orange-600" />
                           <div className="text-left flex-1">
-                            <div className="font-bold">Viser les zones dangereuses</div>
+                            <div className="font-bold text-lg">🎯 Viser les zones dangereuses</div>
                             <div className="text-sm text-gray-600">Zones avant et arrière du terrain</div>
                           </div>
                         </div>
                       </button>
-                      <button onClick={() => setConfig({...config, objetEnseignement: 'espaces'})}
-                        className={`w-full p-4 rounded-lg border-2 transition ${config.objetEnseignement === 'espaces' ? 'border-green-600 bg-green-50' : 'border-gray-300'}`}>
-                        <div className="flex items-center gap-3">
-                          <MapPin className="w-6 h-6 text-green-600" />
+
+                      <button 
+                        onClick={() => setConfig({...config, objetEnseignement: 'espaces'})}
+                        className={`w-full p-5 rounded-2xl border-2 transition shadow-md hover:shadow-lg ${
+                          config.objetEnseignement === 'espaces' 
+                            ? 'border-green-600 bg-gradient-to-r from-green-50 to-teal-50' 
+                            : 'border-gray-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <MapPin className="w-8 h-8 text-green-600" />
                           <div className="text-left flex-1">
-                            <div className="font-bold">Viser les espaces libres</div>
+                            <div className="font-bold text-lg">📍 Viser les espaces libres</div>
                             <div className="text-sm text-gray-600">Où l'adversaire n'est pas</div>
                           </div>
                         </div>
                       </button>
                     </div>
+
                     <div className="flex gap-3">
-                      <button onClick={() => setPhase('config')} className="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold">Retour</button>
-                      <button onClick={() => setPhase('typeMatch')} disabled={!config.objetEnseignement}
-                        className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold disabled:bg-gray-300">Suivant</button>
+                      <button 
+                        onClick={() => setPhase('config')} 
+                        className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold hover:bg-gray-600 transition"
+                      >
+                        ← Retour
+                      </button>
+                      <button 
+                        onClick={() => setPhase('typeMatch')} 
+                        disabled={!config.objetEnseignement}
+                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition"
+                      >
+                        Suivant →
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -493,67 +844,98 @@
             );
           }
 
+          // TYPE DE MATCH
           if (phase === 'typeMatch') {
             return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-8">
-                    <h2 className="text-2xl font-bold text-center mb-6">Configuration du match</h2>
+              <div className="min-h-screen p-4">
+                <div className="max-w-2xl mx-auto animate-slide-in">
+                  <div className="glass rounded-3xl shadow-2xl p-8">
+                    <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                      ⚙️ Configuration du match
+                    </h2>
+
                     <div className="mb-6">
-                      <h3 className="font-semibold text-gray-700 mb-3">Type de match</h3>
+                      <h3 className="font-bold text-gray-700 mb-3 text-lg">Type de match</h3>
                       <div className="space-y-3">
-                        <button onClick={() => setConfig({...config, typeMatch: '3min'})}
-                          className={`w-full p-4 rounded-lg border-2 ${config.typeMatch === '3min' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
-                          <div className="flex items-center gap-3">
-                            <Clock className="w-6 h-6 text-indigo-600" />
-                            <div className="text-left"><div className="font-bold">Match en 3 minutes</div><div className="text-sm text-gray-600">Durée limitée</div></div>
-                          </div>
-                        </button>
-                        <button onClick={() => setConfig({...config, typeMatch: '11pts'})}
-                          className={`w-full p-4 rounded-lg border-2 ${config.typeMatch === '11pts' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
-                          <div className="flex items-center gap-3">
-                            <Target className="w-6 h-6 text-indigo-600" />
-                            <div className="text-left"><div className="font-bold">Match en 11 points</div><div className="text-sm text-gray-600">Changement à 6 points</div></div>
-                          </div>
-                        </button>
-                        <button onClick={() => setConfig({...config, typeMatch: '15pts'})}
-                          className={`w-full p-4 rounded-lg border-2 ${config.typeMatch === '15pts' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300'}`}>
-                          <div className="flex items-center gap-3">
-                            <Target className="w-6 h-6 text-indigo-600" />
-                            <div className="text-left"><div className="font-bold">Match en 15 points</div><div className="text-sm text-gray-600">Changement à 8 points</div></div>
-                          </div>
-                        </button>
+                        {[
+                          {value: '3min', icon: Clock, title: 'Match en 3 minutes', desc: 'Durée limitée'},
+                          {value: '11pts', icon: Target, title: 'Match en 11 points', desc: 'Changement à 6 points'},
+                          {value: '15pts', icon: Target, title: 'Match en 15 points', desc: 'Changement à 8 points'}
+                        ].map(({value, icon: Icon, title, desc}) => (
+                          <button 
+                            key={value}
+                            onClick={() => setConfig({...config, typeMatch: value})}
+                            className={`w-full p-4 rounded-xl border-2 transition shadow-md hover:shadow-lg ${
+                              config.typeMatch === value 
+                                ? 'border-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50' 
+                                : 'border-gray-300 bg-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon className="w-7 h-7 text-emerald-600" />
+                              <div className="text-left">
+                                <div className="font-bold">{title}</div>
+                                <div className="text-sm text-gray-600">{desc}</div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
+
                     <div className="mb-6">
-                      <h3 className="font-semibold text-gray-700 mb-3">Options de jeu</h3>
+                      <h3 className="font-bold text-gray-700 mb-3 text-lg">Options de jeu</h3>
                       <div className="space-y-3">
-                        <label className="flex items-center p-4 rounded-lg border-2 cursor-pointer transition hover:bg-blue-50 border-gray-300">
-                          <input type="checkbox" checked={config.pointsDoubles} onChange={(e) => setConfig({...config, pointsDoubles: e.target.checked})}
-                            className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer" />
+                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer transition hover:bg-blue-50 border-gray-300 shadow-sm">
+                          <input 
+                            type="checkbox" 
+                            checked={config.pointsDoubles} 
+                            onChange={(e) => setConfig({...config, pointsDoubles: e.target.checked})}
+                            className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer" 
+                          />
                           <div className="ml-3 flex items-center gap-3 flex-1">
                             <Award className="w-6 h-6 text-blue-600" />
-                            <div><div className="font-bold text-gray-800">Points doubles</div>
-                              <div className="text-sm text-gray-600">{config.pointsDoubles ? "✓ Les actions de l'objet valent 2 points" : "Toutes les actions valent 1 point"}</div>
+                            <div>
+                              <div className="font-bold text-gray-800">🏆 Points doubles</div>
+                              <div className="text-sm text-gray-600">
+                                {config.pointsDoubles ? "✓ Les actions de l'objet valent 2 points" : "Toutes les actions valent 1 point"}
+                              </div>
                             </div>
                           </div>
                         </label>
-                        <label className="flex items-center p-4 rounded-lg border-2 cursor-pointer transition hover:bg-red-50 border-gray-300">
-                          <input type="checkbox" checked={config.mortSubite} onChange={(e) => setConfig({...config, mortSubite: e.target.checked})}
-                            className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500 cursor-pointer" />
+
+                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer transition hover:bg-red-50 border-gray-300 shadow-sm">
+                          <input 
+                            type="checkbox" 
+                            checked={config.mortSubite} 
+                            onChange={(e) => setConfig({...config, mortSubite: e.target.checked})}
+                            className="w-5 h-5 text-red-600 rounded focus:ring-2 focus:ring-red-500 cursor-pointer" 
+                          />
                           <div className="ml-3 flex items-center gap-3 flex-1">
                             <AlertCircle className="w-6 h-6 text-red-600" />
-                            <div><div className="font-bold text-gray-800">Mort subite</div>
+                            <div>
+                              <div className="font-bold text-gray-800">⚠️ Mort subite</div>
                               <div className="text-sm text-gray-600">Défaite après 3 points doubles encaissés</div>
                             </div>
                           </div>
                         </label>
                       </div>
                     </div>
+
                     <div className="flex gap-3">
-                      <button onClick={() => setPhase('objetEnseignement')} className="flex-1 bg-gray-500 text-white py-3 rounded-lg font-semibold">Retour</button>
-                      <button onClick={demarrerPoule} disabled={!config.typeMatch}
-                        className="flex-1 bg-indigo-600 text-white py-3 rounded-lg font-semibold disabled:bg-gray-300">Démarrer</button>
+                      <button 
+                        onClick={() => setPhase('objetEnseignement')} 
+                        className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold hover:bg-gray-600 transition"
+                      >
+                        ← Retour
+                      </button>
+                      <button 
+                        onClick={demarrerPoule} 
+                        disabled={!config.typeMatch}
+                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition"
+                      >
+                        🚀 Démarrer
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -561,14 +943,22 @@
             );
           }
 
+          // SÉLECTION DES MATCHS
           if (phase === 'selection') {
+            const matchsOrdonnes = genererOrdreMatchs(poule);
+
             return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-4xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+              <div className="min-h-screen p-4">
+                <div className="max-w-4xl mx-auto animate-slide-in">
+                  <div className="glass rounded-3xl shadow-2xl p-6 mb-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-2xl font-bold">{config.classe}</h2>
-                      <div className="text-sm text-gray-600">
+                      <div>
+                        <h2 className="text-2xl font-bold text-emerald-700">{config.classe}</h2>
+                        <p className="text-sm text-gray-600">
+                          Séance #{currentSeance}
+                        </p>
+                      </div>
+                      <div className="text-right text-sm text-gray-600">
                         {config.objetEnseignement === 'smash' && '⚡ Smash'}
                         {config.objetEnseignement === 'zones' && '🎯 Zones'}
                         {config.objetEnseignement === 'espaces' && '📍 Espaces'}
@@ -577,233 +967,193 @@
                         {config.mortSubite && ' ⚠️'}
                       </div>
                     </div>
+
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-bold text-lg">📋 Ordre des matchs</h3>
+                      <div className="text-sm">
+                        <span className="text-green-600 font-bold">{matchsTermines.length}</span>
+                        <span className="text-gray-600"> / {matchsOrdonnes.length} matchs</span>
+                      </div>
+                    </div>
+
                     <div className="grid gap-3">
-                      {poule.map((j1, i) => 
-                        poule.slice(i + 1).map(j2 => (
-                          <button key={`${j1.nom}-${j2.nom}`} onClick={() => demarrerMatch(j1, j2)}
-                            className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 rounded-lg flex items-center justify-between">
-                            <span className="font-semibold">{j1.prenom} {j1.nom} vs {j2.prenom} {j2.nom}</span>
-                            <ChevronRight className="w-6 h-6" />
-                          </button>
-                        ))
-                      )}
+                      {matchsOrdonnes.map((match, index) => {
+                        const [j1, j2] = match;
+                        const estTermine = isMatchTermine(j1, j2);
+                        const matchKey = getMatchKey(j1, j2);
+                        const matchData = matchsTermines.find(m => m.key === matchKey);
+
+                        return (
+                          <div key={index} className={`${estTermine ? 'match-done' : 'match-pending'} text-white p-4 rounded-xl flex items-center justify-between shadow-lg transition-all`}>
+                            <div className="flex items-center gap-3">
+                              <div className="bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm">
+                                {index + 1}
+                              </div>
+                              <span className="font-bold">
+                                {j1.prenom} {j1.nom} vs {j2.prenom} {j2.nom}
+                              </span>
+                            </div>
+                            
+                            {estTermine ? (
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold text-lg">
+                                  ✓ {matchData.scoreJ1} - {matchData.scoreJ2}
+                                </span>
+                                <button
+                                  onClick={() => modifierMatch(matchData)}
+                                  className="bg-white text-emerald-600 p-2 rounded-lg hover:bg-emerald-50 transition"
+                                  title="Modifier le résultat"
+                                >
+                                  <Edit className="w-5 h-5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => demarrerMatch(j1, j2)}
+                                className="bg-white text-blue-600 px-5 py-2 rounded-lg font-bold hover:bg-blue-50 transition flex items-center gap-2"
+                              >
+                                Jouer <ChevronRight className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+
+                  {/* Classement */}
+                  <div className="glass rounded-3xl shadow-2xl p-6 mb-6">
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="text-xl font-bold flex items-center gap-2">
                         <Trophy className="w-6 h-6 text-yellow-500" />Classement
                       </h2>
-                      <button onClick={() => setPhase('stats')} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                        Stats détaillées
+                      <button 
+                        onClick={() => setPhase('stats')} 
+                        className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:from-emerald-700 hover:to-teal-700 transition"
+                      >
+                        📊 Stats détaillées
                       </button>
                     </div>
+                    
                     <div className="space-y-2">
-                      {Object.values(donnees).sort((a, b) => b.matchsGagnes - a.matchsGagnes).map((joueur, index) => (
-                        <div key={joueur.nom} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold text-lg w-6">{index + 1}</span>
-                            <span className="font-semibold">{joueur.prenom} {joueur.nom}</span>
-                          </div>
-                          <div className="flex gap-4 text-sm items-center">
-                            <span className="text-green-600 font-semibold">{joueur.matchsGagnes}V</span>
-                            <span className="text-gray-600">{joueur.matchsJoues - joueur.matchsGagnes}D</span>
-                            <span className="text-gray-500">({joueur.pointsMarques}-{joueur.pointsEncaisses})</span>
-                            {joueur.victoires.length > 0 && (
-                              <span className={`text-xs font-bold ${joueur.victoires[joueur.victoires.length - 1].indice.couleur}`}>
-                                {joueur.victoires[joueur.victoires.length - 1].indice.icon}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <button onClick={() => {
-                      if (confirm('Nouvelle poule ?')) {
-                        setConfig({ classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false });
-                        setPoule([]); setMatchEnCours(null); setHistoriquePoints([]); setDonnees({}); setPhase('classe');
-                      }
-                    }}
-                    className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <RotateCcw className="w-5 h-5" />Nouvelle poule
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          if (phase === 'jeu' && matchEnCours) {
-            const getButtonForObjet = (joueur) => {
-              const pointsText = config.pointsDoubles ? '+2' : '+1';
-              if (config.objetEnseignement === 'smash') {
-                return (
-                  <button onClick={() => ajouterPoint(joueur, 'smashAnnonce')}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <Zap className="w-5 h-5" />Smash annoncé ({pointsText})
-                  </button>
-                );
-              } else if (config.objetEnseignement === 'zones') {
-                return (
-                  <button onClick={() => setShowTerrain(joueur)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <Target className="w-5 h-5" />Zone dangereuse ({pointsText})
-                  </button>
-                );
-              } else {
-                return (
-                  <button onClick={() => setShowTerrain(joueur)}
-                    className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-4 rounded-lg font-semibold flex items-center justify-center gap-2">
-                    <MapPin className="w-5 h-5" />Zone libre ({pointsText})
-                  </button>
-                );
-              }
-            };
-
-            return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-6xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                    {config.typeMatch === '3min' && (
-                      <div className="text-center mb-4">
-                        <div className={`inline-block px-6 py-2 rounded-full font-bold text-2xl ${timer <= 30 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                          {formatTimer(timer)}
-                        </div>
-                        <button onClick={() => setTimerActif(!timerActif)} className="block mx-auto mt-2 text-sm text-indigo-600">
-                          {timerActif ? 'Pause' : 'Reprendre'}
-                        </button>
-                      </div>
-                    )}
-                    {config.mortSubite && (
-                      <div className="flex justify-center gap-8 mb-4">
-                        <div className="text-center">
-                          <div className="text-sm text-gray-600">{matchEnCours.prenomJ1} {matchEnCours.joueur1}</div>
-                          <div className="flex gap-1 mt-1">
-                            {[1, 2, 3].map(i => (
-                              <div key={i} className={`w-3 h-3 rounded-full ${i <= matchEnCours.pointsDoublesJ2 ? 'bg-red-500' : 'bg-gray-300'}`} />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-sm text-gray-600">{matchEnCours.prenomJ2} {matchEnCours.joueur2}</div>
-                          <div className="flex gap-1 mt-1">
-                            {[1, 2, 3].map(i => (
-                              <div key={i} className={`w-3 h-3 rounded-full ${i <= matchEnCours.pointsDoublesJ1 ? 'bg-red-500' : 'bg-gray-300'}`} />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-3 gap-4 items-center">
-                      <div className="text-center">
-                        <h3 className="text-xl font-bold mb-2">{matchEnCours.prenomJ1} {matchEnCours.joueur1}</h3>
-                        <div className="text-6xl font-bold text-blue-600">{matchEnCours.scoreJ1}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-4xl font-bold text-gray-400">VS</div>
-                        {matchEnCours.coteChange && <div className="text-xs text-green-600 font-semibold mt-2">Côté changé ✓</div>}
-                      </div>
-                      <div className="text-center">
-                        <h3 className="text-xl font-bold mb-2">{matchEnCours.prenomJ2} {matchEnCours.joueur2}</h3>
-                        <div className="text-6xl font-bold text-red-600">{matchEnCours.scoreJ2}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                      <h3 className="text-xl font-bold text-blue-600 mb-4">{matchEnCours.prenomJ1} {matchEnCours.joueur1}</h3>
-                      <div className="space-y-3">
-                        <button onClick={() => ajouterPoint('j1', 'normal')} className="w-full bg-blue-500 text-white py-4 rounded-lg font-semibold">
-                          Point normal (+1)
-                        </button>
-                        {getButtonForObjet('j1')}
-                      </div>
-                      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-1">Stats</p>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div><span className="text-orange-600 font-semibold">{matchEnCours.statsJ1.zonesDangereuses}</span><span className="text-gray-500"> ZD</span></div>
-                          <div><span className="text-purple-600 font-semibold">{matchEnCours.statsJ1.smashAnnonces}</span><span className="text-gray-500"> SA</span></div>
-                          <div><span className="text-green-600 font-semibold">{matchEnCours.statsJ1.zonesLibres}</span><span className="text-gray-500"> ZL</span></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                      <h3 className="text-xl font-bold text-red-600 mb-4">{matchEnCours.prenomJ2} {matchEnCours.joueur2}</h3>
-                      <div className="space-y-3">
-                        <button onClick={() => ajouterPoint('j2', 'normal')} className="w-full bg-red-500 text-white py-4 rounded-lg font-semibold">
-                          Point normal (+1)
-                        </button>
-                        {getButtonForObjet('j2')}
-                      </div>
-                      <div className="mt-4 p-3 bg-red-50 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-1">Stats</p>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div><span className="text-orange-600 font-semibold">{matchEnCours.statsJ2.zonesDangereuses}</span><span className="text-gray-500"> ZD</span></div>
-                          <div><span className="text-purple-600 font-semibold">{matchEnCours.statsJ2.smashAnnonces}</span><span className="text-gray-500"> SA</span></div>
-                          <div><span className="text-green-600 font-semibold">{matchEnCours.statsJ2.zonesLibres}</span><span className="text-gray-500"> ZL</span></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4 mt-6">
-                    <button onClick={() => { if (confirm('Terminer ce match ?')) terminerMatch(); }}
-                      className="bg-indigo-600 text-white py-4 rounded-lg font-semibold">Terminer le match</button>
-                    <button onClick={annulerDernierPoint} disabled={historiquePoints.length === 0}
-                      className="bg-orange-600 text-white py-4 rounded-lg font-semibold disabled:bg-gray-300 flex items-center justify-center gap-2 transition">
-                      <RotateCcw className="w-5 h-5" />Annuler dernier point ({historiquePoints.length})
-                    </button>
-                  </div>
-                  <div className="mt-4">
-                    <button onClick={() => {
-                        if (confirm('Annuler ce match ?')) { setMatchEnCours(null); setHistoriquePoints([]); setTimerActif(false); setPhase('selection'); }
-                      }}
-                      className="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold">Annuler le match</button>
-                  </div>
-                </div>
-                {showTerrain && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-lg w-full">
-                      <h3 className="text-xl font-bold mb-4 text-center">Où le point a été marqué ? 🏸</h3>
-                      <div className="mb-6 bg-gradient-to-br from-green-700 to-green-600 p-4 rounded-lg">
-                        <svg viewBox="0 0 100 100" className="w-full bg-green-800 rounded-lg border-4 border-white">
-                          <rect x="5" y="5" width="90" height="90" fill="#1a5e1a" stroke="#fff" strokeWidth="2"/>
-                          <line x1="50" y1="5" x2="50" y2="95" stroke="#fff" strokeWidth="1.5"/>
-                          <line x1="5" y1="50" x2="95" y2="50" stroke="#fff" strokeWidth="2"/>
-                          <line x1="5" y1="30" x2="95" y2="30" stroke="#fff" strokeWidth="1" strokeDasharray="2,2"/>
-                          <line x1="5" y1="70" x2="95" y2="70" stroke="#fff" strokeWidth="1" strokeDasharray="2,2"/>
-                          <rect x="48" y="5" width="4" height="90" fill="#333" opacity="0.3"/>
-                          <rect x="10" y="10" width="35" height="35" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-                          <text x="27.5" y="30" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">AVANT</text>
-                          <text x="27.5" y="38" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">GAUCHE</text>
-                          <rect x="55" y="10" width="35" height="35" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-                          <text x="72.5" y="30" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">AVANT</text>
-                          <text x="72.5" y="38" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">DROITE</text>
-                          <rect x="10" y="55" width="35" height="35" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-                          <text x="27.5" y="74" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">ARRIÈRE</text>
-                          <text x="27.5" y="82" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">GAUCHE</text>
-                          <rect x="55" y="55" width="35" height="35" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-                          <text x="72.5" y="74" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">ARRIÈRE</text>
-                          <text x="72.5" y="82" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">DROITE</text>
-                        </svg>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 mb-6">
-                        {[1, 2, 3, 4].map(zone => {
-                          const labels = ['Avant Gauche', 'Avant Droite', 'Arrière Gauche', 'Arrière Droite'];
-                          const colors = zone <= 2 ? 'from-green-500 to-green-600' : 'from-green-700 to-green-800';
+                      {Object.values(donnees)
+                        .sort((a, b) => {
+                          // Tri par victoires puis par différence de points
+                          if (b.matchsGagnes !== a.matchsGagnes) {
+                            return b.matchsGagnes - a.matchsGagnes;
+                          }
+                          return (b.pointsMarques - b.pointsEncaisses) - (a.pointsMarques - a.pointsEncaisses);
+                        })
+                        .map((joueur, index) => {
+                          const diff = joueur.pointsMarques - joueur.pointsEncaisses;
                           return (
-                            <button key={zone} onClick={() => {
-                                const type = config.objetEnseignement === 'zones' ? 'zoneDangereuse' : 'zoneLibre';
-                                ajouterPointAvecZone(showTerrain, type, zone);
-                                setShowTerrain(false);
-                              }}
-                              className={`bg-gradient-to-br ${colors} hover:scale-105 text-white py-8 rounded-lg font-bold shadow-lg transform transition`}>
-                              <div className="text-2xl mb-1">{zone <= 2 ? '⬆️' : '⬇️'}</div>
-                              <div>{labels[zone - 1]}</div>
-                            </button>
+                            <div key={`${joueur.prenom}_${joueur.nom}`} className="flex justify-between items-center bg-gradient-to-r from-gray-50 to-white p-4 rounded-xl border-2 border-gray-200 shadow-sm">
+                              <div className="flex items-center gap-4">
+                                <div className={`font-bold text-2xl w-8 ${
+                                  index === 0 ? 'text-yellow-500' :
+                                  index === 1 ? 'text-gray-400' :
+                                  index === 2 ? 'text-amber-600' :
+                                  'text-gray-500'
+                                }`}>
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </div>
+                                <span className="font-bold text-lg">{joueur.prenom} {joueur.nom}</span>
+                              </div>
+                              <div className="flex gap-4 text-sm items-center">
+                                <span className="text-green-600 font-bold text-lg">{joueur.matchsGagnes}V</span>
+                                <span className="text-red-600 font-bold">{joueur.matchsJoues - joueur.matchsGagnes}D</span>
+                                <span className={`font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                  ({diff > 0 ? '+' : ''}{diff})
+                                </span>
+                                {joueur.victoires.length > 0 && (
+                                  <span className={`text-lg ${joueur.victoires[joueur.victoires.length - 1].indice.couleur}`}>
+                                    {joueur.victoires[joueur.victoires.length - 1].indice.icon}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           );
                         })}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => {
+                        setCurrentSeance(prev => prev + 1);
+                        sauvegarderDonnees();
+                        alert('💾 Séance sauvegardée ! Vous pourrez reprendre plus tard.');
+                      }}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-blue-700 hover:to-indigo-700 transition shadow-lg"
+                    >
+                      <Save className="w-5 h-5" />Sauvegarder & Pause
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (confirm('Nouvelle poule ? (Les données actuelles seront sauvegardées)')) {
+                          sauvegarderDonnees();
+                          setConfig({ classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false });
+                          setPoule([]); 
+                          setMatchEnCours(null); 
+                          setHistoriquePoints([]); 
+                          setDonnees({}); 
+                          setMatchsTermines([]);
+                          setPhase('classe');
+                        }
+                      }}
+                      className="flex-1 bg-gradient-to-r from-red-600 to-pink-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:from-red-700 hover:to-pink-700 transition shadow-lg"
+                    >
+                      <RotateCcw className="w-5 h-5" />Nouvelle poule
+                    </button>
+                  </div>
+                </div>
+
+                {/* Modal de modification de match */}
+                {showEditMatch && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="glass rounded-2xl p-6 max-w-md w-full">
+                      <h3 className="text-xl font-bold mb-4">✏️ Modifier le résultat</h3>
+                      <div className="mb-4">
+                        <p className="text-sm text-gray-600 mb-4">Match: {donnees[showEditMatch.j1]?.prenom} {donnees[showEditMatch.j1]?.nom} vs {donnees[showEditMatch.j2]?.prenom} {donnees[showEditMatch.j2]?.nom}</p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j1]?.prenom}</label>
+                            <input 
+                              type="number" 
+                              id="newScoreJ1"
+                              defaultValue={showEditMatch.scoreJ1}
+                              className="w-full px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-center text-2xl font-bold"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j2]?.prenom}</label>
+                            <input 
+                              type="number" 
+                              id="newScoreJ2"
+                              defaultValue={showEditMatch.scoreJ2}
+                              className="w-full px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-center text-2xl font-bold"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <button onClick={() => setShowTerrain(false)} className="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold">Annuler</button>
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => setShowEditMatch(null)}
+                          className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-bold hover:bg-gray-600 transition"
+                        >
+                          Annuler
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const newScoreJ1 = parseInt(document.getElementById('newScoreJ1').value);
+                            const newScoreJ2 = parseInt(document.getElementById('newScoreJ2').value);
+                            sauvegarderModificationMatch(newScoreJ1, newScoreJ2);
+                          }}
+                          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-xl font-bold hover:from-emerald-700 hover:to-teal-700 transition"
+                        >
+                          💾 Sauvegarder
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -811,79 +1161,425 @@
             );
           }
 
-          if (phase === 'stats') {
+          // PENDANT LE JEU
+          if (phase === 'jeu' && matchEnCours) {
+            const getButtonForObjet = (joueur) => {
+              const pointsText = config.pointsDoubles ? '+2' : '+1';
+              if (config.objetEnseignement === 'smash') {
+                return (
+                  <button 
+                    onClick={() => ajouterPoint(joueur, 'smashAnnonce')}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                  >
+                    <Zap className="w-6 h-6" />Smash annoncé ({pointsText})
+                  </button>
+                );
+              } else if (config.objetEnseignement === 'zones') {
+                return (
+                  <button 
+                    onClick={() => setShowTerrain(joueur)}
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                  >
+                    <Target className="w-6 h-6" />Zone dangereuse ({pointsText})
+                  </button>
+                );
+              } else {
+                return (
+                  <button 
+                    onClick={() => setShowTerrain(joueur)}
+                    className="w-full bg-gradient-to-r from-green-500 to-teal-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                  >
+                    <MapPin className="w-6 h-6" />Zone libre ({pointsText})
+                  </button>
+                );
+              }
+            };
+
             return (
-              <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                <div className="max-w-4xl mx-auto">
-                  <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-                    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                      <TrendingUp className="w-6 h-6 text-indigo-600" />Statistiques - {config.classe}
-                    </h2>
-                    <div className="space-y-4">
-                      {Object.values(donnees).sort((a, b) => b.matchsGagnes - a.matchsGagnes).map((joueur, index) => (
-                        <div key={joueur.nom} className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-5">
-                          <div className="flex items-center gap-3 mb-3">
-                            <span className="text-2xl font-bold text-gray-400">#{index + 1}</span>
-                            <h3 className="text-xl font-bold">{joueur.prenom} {joueur.nom}</h3>
-                          </div>
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
-                            <div className="text-center">
-                              <div className
-                                ="text-2xl font-bold text-indigo-600">{joueur.matchsGagnes}/{joueur.matchsJoues}</div>
-                              <div className="text-xs text-gray-600">Victoires</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-orange-600">{joueur.zonesDangereuses}</div>
-                              <div className="text-xs text-gray-600">Zones dangereuses</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-purple-600">{joueur.smashAnnonces}</div>
-                              <div className="text-xs text-gray-600">Smashs annoncés</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">{joueur.zonesLibres}</div>
-                              <div className="text-xs text-gray-600">Zones libres</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">{joueur.pointsDoubles}</div>
-                              <div className="text-xs text-gray-600">Points doubles</div>
-                            </div>
-                          </div>
-                          {joueur.victoires && joueur.victoires.length > 0 && (
-                            <div className="mb-3 p-3 bg-white rounded-lg">
-                              <p className="text-sm font-semibold mb-2">Indices de réussite :</p>
-                              <div className="space-y-1">
-                                {joueur.victoires.map((v, i) => (
-                                  <div key={i} className="flex items-center justify-between text-xs">
-                                    <span>vs {v.adversaire}</span>
-                                    <span className="flex items-center gap-2">
-                                      <span className="text-gray-600">{v.score}</span>
-                                      <span className={`font-bold ${v.indice.couleur}`}>{v.indice.icon} {v.indice.texte}</span>
-                                      <span className="text-gray-500">({v.bonus} bonus)</span>
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {joueur.pointsTerrain && joueur.pointsTerrain.length > 0 && (
-                            <div className="mt-3">
-                              <TerrainBadminton points={joueur.pointsTerrain} joueurNom={`${joueur.prenom} ${joueur.nom}`} />
-                            </div>
-                          )}
-                          <div className="pt-3 border-t border-gray-300 text-sm text-gray-600 text-center">
-                            Points: <span className="font-semibold text-green-600">{joueur.pointsMarques}</span> marqués / 
-                            <span className="font-semibold text-red-600"> {joueur.pointsEncaisses}</span> encaissés
-                            {joueur.defaitesMortSubite > 0 && (
-                              <span className="ml-2 text-red-600 font-semibold">| ⚠️ {joueur.defaitesMortSubite} mort subite</span>
-                            )}
+              <div className="min-h-screen p-4">
+                <div className="max-w-6xl mx-auto animate-slide-in">
+                  {/* Timer */}
+                  {config.typeMatch === '3min' && (
+                    <div className="glass rounded-2xl p-4 mb-6 text-center">
+                      <div className={`inline-block px-8 py-3 rounded-full font-bold text-3xl ${timer <= 30 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        ⏱️ {formatTimer(timer)}
+                      </div>
+                      <button 
+                        onClick={() => setTimerActif(!timerActif)} 
+                        className="block mx-auto mt-3 text-sm text-emerald-600 font-bold hover:text-emerald-700"
+                      >
+                        {timerActif ? '⏸️ Pause' : '▶️ Reprendre'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Mort subite */}
+                  {config.mortSubite && (
+                    <div className="glass rounded-2xl p-4 mb-6">
+                      <h4 className="text-center font-bold mb-3 text-red-600">⚠️ Mort Subite</h4>
+                      <div className="flex justify-center gap-12">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-700 font-bold mb-2">{matchEnCours.prenomJ1}</div>
+                          <div className="flex gap-1">
+                            {[1, 2, 3].map(i => (
+                              <div key={i} className={`w-4 h-4 rounded-full ${i <= matchEnCours.pointsDoublesJ2 ? 'bg-red-500' : 'bg-gray-300'}`} />
+                            ))}
                           </div>
                         </div>
-                      ))}
+                        <div className="text-center">
+                          <div className="text-sm text-gray-700 font-bold mb-2">{matchEnCours.prenomJ2}</div>
+                          <div className="flex gap-1">
+                            {[1, 2, 3].map(i => (
+                              <div key={i} className={`w-4 h-4 rounded-full ${i <= matchEnCours.pointsDoublesJ1 ? 'bg-red-500' : 'bg-gray-300'}`} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Score */}
+                  <div className="glass rounded-3xl shadow-2xl p-8 mb-6">
+                    <div className="grid grid-cols-3 gap-6 items-center">
+                      <div className="text-center">
+                        <h3 className="text-2xl font-bold mb-3 text-blue-600">{matchEnCours.prenomJ1} {matchEnCours.nomJ1}</h3>
+                        <div className="text-7xl font-extrabold text-blue-600">{matchEnCours.scoreJ1}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-5xl font-extrabold text-gray-400">VS</div>
+                        {matchEnCours.coteChange && (
+                          <div className="text-xs text-green-600 font-bold mt-3 bg-green-50 rounded-full px-3 py-1 inline-block">
+                            ✓ Côté changé
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center">
+                        <h3 className="text-2xl font-bold mb-3 text-red-600">{matchEnCours.prenomJ2} {matchEnCours.nomJ2}</h3>
+                        <div className="text-7xl font-extrabold text-red-600">{matchEnCours.scoreJ2}</div>
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => setPhase('selection')} className="w-full bg-indigo-600 text-white py-4 rounded-lg font-semibold">
-                    Retour
+
+                  {/* Boutons de score */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    {/* Joueur 1 */}
+                    <div className="glass rounded-2xl shadow-xl p-6">
+                      <h3 className="text-xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                        {matchEnCours.prenomJ1}
+                      </h3>
+                      <div className="space-y-3">
+                        <button 
+                          onClick={() => ajouterPoint('j1', 'normal')} 
+                          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                        >
+                          Point normal (+1)
+                        </button>
+                        {getButtonForObjet('j1')}
+                      </div>
+                      <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                        <p className="text-sm text-gray-700 font-bold mb-2">📊 Statistiques</p>
+                        <div className="grid grid-cols-3 gap-3 text-xs">
+                          <div className="text-center p-2 bg-white rounded-lg">
+                            <div className="text-2xl font-bold text-orange-600">{matchEnCours.statsJ1.zonesDangereuses}</div>
+                            <div className="text-gray-600">ZD</div>
+                          </div>
+                          <div className="text-center p-2 bg-white rounded-lg">
+                            <div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ1.smashAnnonces}</div>
+                            <div className="text-gray-600">SA</div>
+                          </div>
+                          <div className="text-center p-2 bg-white rounded-lg">
+                            <div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ1.zonesLibres}</div>
+                            <div className="text-gray-600">ZL</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Joueur 2 */}
+                    <div className="glass rounded-2xl shadow-xl p-6">
+                      <h3 className="text-xl font-bold text-red-600 mb-4 flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                        {matchEnCours.prenomJ2}
+                      </h3>
+                      <div className="space-y-3">
+                        <button 
+                          onClick={() => ajouterPoint('j2', 'normal')} 
+                          className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition transform hover:scale-105"
+                        >
+                          Point normal (+1)
+                        </button>
+                        {getButtonForObjet('j2')}
+                      </div>
+                      <div className="mt-4 p-4 bg-red-50 rounded-xl">
+                        <p className="text-sm text-gray-700 font-bold mb-2">📊 Statistiques</p>
+                        <div className="grid grid-cols-3 gap-3 text-xs">
+                          <div className="text-center p-2 bg-white rounded-lg">
+                            <div className="text-2xl font-bold text-orange-600">{matchEnCours.statsJ2.zonesDangereuses}</div>
+                            <div className="text-gray-600">ZD</div>
+                          </div>
+                          <div className="text-center p-2 bg-white rounded-lg">
+                            <div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ2.smashAnnonces}</div>
+                            <div className="text-gray-600">SA</div>
+                          </div>
+                          <div className="text-center p-2 bg-white rounded-lg">
+                            <div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ2.zonesLibres}</div>
+                            <div className="text-gray-600">ZL</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Boutons d'action */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <button 
+                      onClick={() => { 
+                        if (confirm('Terminer ce match ?')) terminerMatch(); 
+                      }}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition"
+                    >
+                      ✓ Terminer le match
+                    </button>
+                    <button 
+                      onClick={annulerDernierPoint} 
+                      disabled={historiquePoints.length === 0}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-5 rounded-xl font-bold text-lg disabled:from-gray-300 disabled:to-gray-400 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition disabled:shadow-none"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                      Annuler dernier point ({historiquePoints.length})
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={() => {
+                      if (confirm('Annuler ce match ?')) { 
+                        setMatchEnCours(null); 
+                        setHistoriquePoints([]); 
+                        setTimerActif(false); 
+                        setPhase('selection'); 
+                      }
+                    }}
+                    className="w-full mt-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-4 rounded-xl font-bold hover:from-gray-700 hover:to-gray-800 transition"
+                  >
+                    ← Retour à la sélection
+                  </button>
+                </div>
+
+                {/* Modal de sélection de zone - AMÉLIORÉ pour afficher toutes les zones */}
+                {showTerrain && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="glass rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                      <h3 className="text-2xl font-bold mb-4 text-center">🏸 Où le point a été marqué ?</h3>
+                      
+                      {/* Aperçu du terrain */}
+                      <div className="mb-6 bg-gradient-to-br from-green-700 to-green-600 p-6 rounded-xl">
+                        <svg viewBox="0 0 100 100" className="w-full max-w-md mx-auto bg-green-800 rounded-lg border-4 border-white shadow-xl">
+                          <rect x="5" y="5" width="90" height="90" fill="#1a5e1a" stroke="#fff" strokeWidth="2"/>
+                          <line x1="50" y1="5" x2="50" y2="95" stroke="#fff" strokeWidth="1.5"/>
+                          <line x1="5" y1="50" x2="95" y2="50" stroke="#fff" strokeWidth="2"/>
+                          <line x1="5" y1="30" x2="95" y2="30" stroke="#fff" strokeWidth="1" strokeDasharray="2,2"/>
+                          <line x1="5" y1="70" x2="95" y2="70" stroke="#fff" strokeWidth="1" strokeDasharray="2,2"/>
+                          <rect x="48" y="5" width="4" height="90" fill="#333" opacity="0.3"/>
+                          
+                          {/* Labels des zones */}
+                          <text x="27.5" y="25" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">AVANT</text>
+                          <text x="27.5" y="31" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">GAUCHE</text>
+                          <text x="27.5" y="37" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">1</text>
+                          
+                          <text x="72.5" y="25" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">AVANT</text>
+                          <text x="72.5" y="31" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">DROITE</text>
+                          <text x="72.5" y="37" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">2</text>
+                          
+                          <text x="27.5" y="67" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">ARRIÈRE</text>
+                          <text x="27.5" y="73" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">GAUCHE</text>
+                          <text x="27.5" y="79" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">3</text>
+                          
+                          <text x="72.5" y="67" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">ARRIÈRE</text>
+                          <text x="72.5" y="73" textAnchor="middle" fill="#fff" fontSize="6" fontWeight="bold">DROITE</text>
+                          <text x="72.5" y="79" textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">4</text>
+                        </svg>
+                      </div>
+
+                      {/* Boutons de sélection - GRILLE 2x2 POUR TOUTES LES ZONES */}
+                      <div className="grid grid-cols-2 gap-4 mb-6">
+                        {[
+                          {id: 1, label: '⬆️ Avant Gauche', color: 'from-green-500 to-green-600'},
+                          {id: 2, label: '⬆️ Avant Droite', color: 'from-green-500 to-green-600'},
+                          {id: 3, label: '⬇️ Arrière Gauche', color: 'from-green-700 to-green-800'},
+                          {id: 4, label: '⬇️ Arrière Droite', color: 'from-green-700 to-green-800'}
+                        ].map(zone => (
+                          <button 
+                            key={zone.id} 
+                            onClick={() => {
+                              const type = config.objetEnseignement === 'zones' ? 'zoneDangereuse' : 'zoneLibre';
+                              ajouterPointAvecZone(showTerrain, type, zone.id);
+                              setShowTerrain(false);
+                            }}
+                            className={`bg-gradient-to-br ${zone.color} hover:scale-105 text-white py-8 rounded-xl font-bold text-lg shadow-xl transform transition`}
+                          >
+                            <div className="text-3xl mb-2">{zone.id}</div>
+                            <div>{zone.label}</div>
+                          </button>
+                        ))}
+                      </div>
+
+                      <button 
+                        onClick={() => setShowTerrain(false)} 
+                        className="w-full bg-gray-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-700 transition"
+                      >
+                        ✕ Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // STATISTIQUES DÉTAILLÉES
+          if (phase === 'stats') {
+            return (
+              <div className="min-h-screen p-4">
+                <div className="max-w-4xl mx-auto animate-slide-in">
+                  <div className="glass rounded-3xl shadow-2xl p-8 mb-6">
+                    <h2 className="text-3xl font-bold mb-6 flex items-center gap-3 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                      <TrendingUp className="w-8 h-8 text-emerald-600" />
+                      Statistiques Détaillées - {config.classe}
+                    </h2>
+                    
+                    {/* Barre de progression globale */}
+                    <div className="mb-8 p-5 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200">
+                      <h3 className="font-bold text-lg mb-3">📈 Progression globale</h3>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 bg-white rounded-lg">
+                          <div className="text-3xl font-bold text-orange-600">
+                            {Object.values(donnees).reduce((sum, j) => sum + j.zonesDangereuses, 0)}
+                          </div>
+                          <div className="text-xs text-gray-600">Zones dangereuses</div>
+                        </div>
+                        <div className="text-center p-3 bg-white rounded-lg">
+                          <div className="text-3xl font-bold text-purple-600">
+                            {Object.values(donnees).reduce((sum, j) => sum + j.smashAnnonces, 0)}
+                          </div>
+                          <div className="text-xs text-gray-600">Smashs annoncés</div>
+                        </div>
+                        <div className="text-center p-3 bg-white rounded-lg">
+                          <div className="text-3xl font-bold text-green-600">
+                            {Object.values(donnees).reduce((sum, j) => sum + j.zonesLibres, 0)}
+                          </div>
+                          <div className="text-xs text-gray-600">Zones libres</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {Object.values(donnees)
+                        .sort((a, b) => b.matchsGagnes - a.matchsGagnes)
+                        .map((joueur, index) => {
+                          const tauxVictoire = joueur.matchsJoues > 0 ? Math.round((joueur.matchsGagnes / joueur.matchsJoues) * 100) : 0;
+                          
+                          return (
+                            <div key={`${joueur.prenom}_${joueur.nom}`} className="stat-card rounded-2xl p-6">
+                              <div className="flex items-center gap-4 mb-4">
+                                <span className={`text-3xl font-bold ${
+                                  index === 0 ? 'text-yellow-500' :
+                                  index === 1 ? 'text-gray-400' :
+                                  index === 2 ? 'text-amber-600' :
+                                  'text-gray-500'
+                                }`}>
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                                </span>
+                                <div className="flex-1">
+                                  <h3 className="text-2xl font-bold text-white">{joueur.prenom} {joueur.nom}</h3>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <div className="h-3 flex-1 bg-white bg-opacity-20 rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full transition-all duration-500"
+                                        style={{width: `${tauxVictoire}%`}}
+                                      />
+                                    </div>
+                                    <span className="text-white font-bold text-sm">{tauxVictoire}%</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Statistiques principales */}
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                                <div className="text-center p-3 bg-white bg-opacity-10 rounded-xl">
+                                  <div className="text-3xl font-bold text-white">{joueur.matchsGagnes}/{joueur.matchsJoues}</div>
+                                  <div className="text-xs text-white text-opacity-80">Victoires</div>
+                                </div>
+                                <div className="text-center p-3 bg-white bg-opacity-10 rounded-xl">
+                                  <div className="text-3xl font-bold text-orange-400">{joueur.zonesDangereuses}</div>
+                                  <div className="text-xs text-white text-opacity-80">Zones danger.</div>
+                                </div>
+                                <div className="text-center p-3 bg-white bg-opacity-10 rounded-xl">
+                                  <div className="text-3xl font-bold text-purple-400">{joueur.smashAnnonces}</div>
+                                  <div className="text-xs text-white text-opacity-80">Smashs ann.</div>
+                                </div>
+                                <div className="text-center p-3 bg-white bg-opacity-10 rounded-xl">
+                                  <div className="text-3xl font-bold text-green-400">{joueur.zonesLibres}</div>
+                                  <div className="text-xs text-white text-opacity-80">Zones libres</div>
+                                </div>
+                                <div className="text-center p-3 bg-white bg-opacity-10 rounded-xl">
+                                  <div className="text-3xl font-bold text-yellow-400">{joueur.pointsDoubles}</div>
+                                  <div className="text-xs text-white text-opacity-80">Pts doubles</div>
+                                </div>
+                              </div>
+
+                              {/* Détail des victoires */}
+                              {joueur.victoires && joueur.victoires.length > 0 && (
+                                <div className="mb-4 p-4 bg-white bg-opacity-10 rounded-xl">
+                                  <p className="text-sm font-bold mb-3 text-white">🏆 Indices de réussite :</p>
+                                  <div className="space-y-2">
+                                    {joueur.victoires.map((v, i) => (
+                                      <div key={i} className="flex items-center justify-between text-sm bg-white bg-opacity-10 p-2 rounded-lg">
+                                        <span className="text-white">vs {v.adversaire}</span>
+                                        <span className="flex items-center gap-3">
+                                          <span className="text-gray-200 font-medium">{v.score}</span>
+                                          <span className={`font-bold ${v.indice.couleur.replace('text-', 'text-')}`}>
+                                            {v.indice.icon} {v.indice.texte}
+                                          </span>
+                                          <span className="text-yellow-300 font-bold">({v.bonus} bonus)</span>
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Terrain */}
+                              {joueur.pointsTerrain && joueur.pointsTerrain.length > 0 && (
+                                <div className="mt-4">
+                                  <TerrainBadminton 
+                                    points={joueur.pointsTerrain} 
+                                    joueurNom={`${joueur.prenom} ${joueur.nom}`} 
+                                  />
+                                </div>
+                              )}
+
+                              {/* Bilan points */}
+                              <div className="pt-4 border-t border-white border-opacity-20 text-sm text-white text-opacity-90 text-center">
+                                Points: <span className="font-bold text-green-400">{joueur.pointsMarques}</span> marqués / 
+                                <span className="font-bold text-red-400"> {joueur.pointsEncaisses}</span> encaissés
+                                {joueur.defaitesMortSubite > 0 && (
+                                  <span className="ml-3 text-red-400 font-bold">
+                                    | ⚠️ {joueur.defaitesMortSubite} mort subite
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setPhase('selection')} 
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 transition shadow-lg"
+                  >
+                    ← Retour à la sélection
                   </button>
                 </div>
               </div>
@@ -895,15 +1591,6 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<BadmintonTracker />);
-    </script>
-     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(reg => console.log('✅ Service Worker enregistré'))
-                    .catch(err => console.error('❌ Erreur Service Worker:', err));
-            });
-        }
     </script>
 </body>
 </html>
