@@ -36,8 +36,17 @@
             font-size: 60px;
             margin: 0 auto 20px;
         }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
         
-        /* PAGE PLEIN ÉCRAN POUR LES ZONES - SOLUTION TABLETTES NEUVES */
+        /* PAGE PLEIN ÉCRAN POUR LES ZONES */
         .page-zones-fullscreen {
             position: fixed;
             top: 0;
@@ -60,7 +69,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        console.log('🏸 Badminton Pro - VERSION TABLETTES NEUVES (Page plein écran)');
+        console.log('🏸 Badminton Pro v2.0 COMPLET - Page plein écran zones');
 
         const Icon = ({d, className = "w-6 h-6"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>;
         const Users = ({className}) => <Icon className={className} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />;
@@ -74,6 +83,7 @@
         const Trash2 = ({className}) => <Icon className={className} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />;
         const Edit = ({className}) => <Icon className={className} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />;
         const Save = ({className}) => <Icon className={className} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />;
+        const BarChart = ({className}) => <Icon className={className} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />;
 
         function BadmintonTracker() {
           const [config, setConfig] = useState({classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false});
@@ -86,31 +96,23 @@
           const [donnees, setDonnees] = useState({});
           const [classes, setClasses] = useState({});
           const [showDeleteModal, setShowDeleteModal] = useState(false);
-          const [showTerrain, setShowTerrain] = useState(false); // 'j1', 'j2' ou false
+          const [showTerrain, setShowTerrain] = useState(false);
           const [matchsTermines, setMatchsTermines] = useState([]);
           const [showEditMatch, setShowEditMatch] = useState(null);
           const [seances, setSeances] = useState({});
           const [currentSeance, setCurrentSeance] = useState(1);
 
-          // Sauvegarde auto
           useEffect(() => {
-            const interval = setInterval(() => {
-              sauvegarderDonnees();
-            }, 5000);
+            const interval = setInterval(() => { sauvegarderDonnees(); }, 5000);
             return () => clearInterval(interval);
           }, [donnees, matchsTermines, config, seances]);
 
           const sauvegarderDonnees = () => {
             try {
-              const dataToSave = {
-                classes, config, donnees, matchsTermines, phase, poule, seances, currentSeance,
-                timestamp: new Date().toISOString()
-              };
+              const dataToSave = { classes, config, donnees, matchsTermines, phase, poule, seances, currentSeance, timestamp: new Date().toISOString() };
               localStorage.setItem('badminton-data', JSON.stringify(dataToSave));
               localStorage.setItem('badminton-backup', JSON.stringify(dataToSave));
-            } catch (e) {
-              console.error('Erreur sauvegarde:', e);
-            }
+            } catch (e) {}
           };
 
           useEffect(() => {
@@ -134,14 +136,7 @@
             let interval;
             if (timerActif && timer > 0) {
               interval = setInterval(() => {
-                setTimer(prev => {
-                  if (prev <= 1) { 
-                    setTimerActif(false); 
-                    alert('Temps écoulé !'); 
-                    return 0; 
-                  }
-                  return prev - 1;
-                });
+                setTimer(prev => { if (prev <= 1) { setTimerActif(false); alert('Temps écoulé !'); return 0; } return prev - 1; });
               }, 1000);
             }
             return () => clearInterval(interval);
@@ -213,10 +208,7 @@
           };
 
           const demarrerMatch = (j1, j2) => {
-            if (isMatchTermine(j1, j2)) {
-              alert('Ce match a déjà été joué. Utilisez "Modifier".');
-              return;
-            }
+            if (isMatchTermine(j1, j2)) { alert('Ce match a déjà été joué.'); return; }
             const pointsMax = config.typeMatch === '11pts' ? 11 : config.typeMatch === '15pts' ? 15 : 999;
             setMatchEnCours({
               joueur1: `${j1.prenom}_${j1.nom}`, joueur2: `${j2.prenom}_${j2.nom}`, 
@@ -356,9 +348,7 @@
             sauvegarderDonnees();
           };
 
-          const modifierMatch = (match) => {
-            setShowEditMatch(match);
-          };
+          const modifierMatch = (match) => { setShowEditMatch(match); };
 
           const sauvegarderModificationMatch = (newScoreJ1, newScoreJ2) => {
             setDonnees(prev => {
@@ -373,8 +363,7 @@
               nouveau[match.j2].pointsMarques += newScoreJ2;
               nouveau[match.j2].pointsEncaisses += newScoreJ1;
               const nouvelleVictoireJ1 = newScoreJ1 > newScoreJ2;
-              const ancienneVictoireJ1 = match.victoireJ1;
-              if (nouvelleVictoireJ1 !== ancienneVictoireJ1) {
+              if (nouvelleVictoireJ1 !== match.victoireJ1) {
                 if (nouvelleVictoireJ1) {
                   nouveau[match.j1].matchsGagnes++;
                   nouveau[match.j2].matchsGagnes--;
@@ -386,15 +375,47 @@
               return nouveau;
             });
             setMatchsTermines(prev => prev.map(m => 
-              m.key === showEditMatch.key 
-                ? {...m, scoreJ1: newScoreJ1, scoreJ2: newScoreJ2, victoireJ1: newScoreJ1 > newScoreJ2}
-                : m
+              m.key === showEditMatch.key ? {...m, scoreJ1: newScoreJ1, scoreJ2: newScoreJ2, victoireJ1: newScoreJ1 > newScoreJ2} : m
             ));
             setShowEditMatch(null);
             sauvegarderDonnees();
           };
 
-          // SIMPLIFICATION : Juste les phases essentielles pour le test
+          const TerrainBadminton = ({ points, joueurNom }) => {
+            const zones = [
+              { id: 1, x: 10, y: 10, w: 35, h: 35 },
+              { id: 2, x: 55, y: 10, w: 35, h: 35 },
+              { id: 3, x: 10, y: 55, w: 35, h: 35 },
+              { id: 4, x: 55, y: 55, w: 35, h: 35 }
+            ];
+            const countZone = (zoneId) => points.filter(p => p === zoneId).length;
+            return (
+              <div className="bg-gradient-to-br from-green-700 to-green-600 rounded-lg p-4 border-4 border-white shadow-lg">
+                <h4 className="text-center font-bold mb-2 text-sm text-white">{joueurNom}</h4>
+                <svg viewBox="0 0 100 100" className="w-full max-w-xs mx-auto bg-green-800 rounded">
+                  <rect x="5" y="5" width="90" height="90" fill="#1a5e1a" stroke="#fff" strokeWidth="2"/>
+                  <line x1="50" y1="5" x2="50" y2="95" stroke="#fff" strokeWidth="1.5"/>
+                  <line x1="5" y1="50" x2="95" y2="50" stroke="#fff" strokeWidth="2"/>
+                  {zones.map(zone => {
+                    const count = countZone(zone.id);
+                    return (
+                      <g key={zone.id}>
+                        <rect x={zone.x} y={zone.y} width={zone.w} height={zone.h} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
+                        {count > 0 && (
+                          <>
+                            <circle cx={zone.x + zone.w/2} cy={zone.y + zone.h/2} r="14" fill="#FFD700" stroke="#FFA500" strokeWidth="2"/>
+                            <text x={zone.x + zone.w/2} y={zone.y + zone.h/2 + 5} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#000">{count}</text>
+                          </>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+            );
+          };
+
+          // RENDU DES PAGES
           if (phase === 'classe') {
             return (
               <div className="min-h-screen p-4">
@@ -402,31 +423,68 @@
                   <div className="glass rounded-3xl shadow-2xl p-8">
                     <div className="text-center mb-8">
                       <div className="badminton-icon">🏸</div>
-                      <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
-                        Badminton Pro
-                      </h1>
-                      <p className="text-gray-600 font-medium">Version TABLETTES NEUVES</p>
-                      <p className="text-xs text-emerald-600 mt-2">✓ Page plein écran pour les zones</p>
+                      <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">Badminton Pro</h1>
+                      <p className="text-gray-600 font-medium">Application EPS v2.0</p>
                     </div>
                     <div className="mb-6">
                       <label className="block text-sm font-bold text-gray-700 mb-3">📚 Nom de la classe</label>
-                      <input 
-                        type="text" 
-                        value={config.classe} 
-                        onChange={(e) => setConfig({...config, classe: e.target.value})}
+                      <input type="text" value={config.classe} onChange={(e) => setConfig({...config, classe: e.target.value})}
                         className="w-full px-5 py-4 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none text-lg font-medium shadow-sm"
-                        placeholder="Ex: 3ème A" 
-                      />
+                        placeholder="Ex: 3ème A" />
                     </div>
-                    <button 
-                      onClick={() => setPhase('config')} 
-                      disabled={!config.classe.trim()}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-300 disabled:to-gray-400 transition shadow-lg"
-                    >
+                    {Object.keys(classes).length > 0 && (
+                      <div className="mb-6">
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-sm font-bold text-gray-700">📂 Classes existantes</p>
+                          <button onClick={() => setShowDeleteModal(true)} className="text-red-600 text-sm flex items-center gap-1">
+                            <Trash2 className="w-4 h-4" /> Gérer
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {Object.keys(classes).map(cls => (
+                            <button key={cls} onClick={() => { setConfig({...config, classe: cls}); setDonnees(classes[cls]); }}
+                              className="w-full text-left px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200">
+                              <span className="font-bold text-emerald-700">{cls}</span>
+                              <span className="text-sm text-gray-600 ml-2">({Object.keys(classes[cls]).length} élèves)</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <button onClick={() => setPhase('config')} disabled={!config.classe.trim()}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold text-lg disabled:from-gray-300">
                       Continuer →
                     </button>
                   </div>
                 </div>
+
+                {showDeleteModal && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="glass rounded-2xl p-6 max-w-md w-full">
+                      <h3 className="text-xl font-bold mb-4">🗑️ Supprimer des classes</h3>
+                      <div className="space-y-2 mb-6">
+                        {Object.keys(classes).map(cls => (
+                          <div key={cls} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <span className="font-medium">{cls}</span>
+                            <button onClick={() => {
+                              if (confirm(`Supprimer "${cls}" ?`)) {
+                                const updated = {...classes};
+                                delete updated[cls];
+                                setClasses(updated);
+                                sauvegarderDonnees();
+                              }
+                            }} className="text-red-600 p-2 hover:bg-red-50 rounded">
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button onClick={() => setShowDeleteModal(false)} className="w-full bg-gray-600 text-white py-3 rounded-lg font-bold">
+                        Fermer
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           }
@@ -436,20 +494,20 @@
               <div className="min-h-screen p-4">
                 <div className="max-w-2xl mx-auto">
                   <div className="glass rounded-3xl shadow-2xl p-8">
-                    <h1 className="text-3xl font-bold text-center mb-6">{config.classe}</h1>
+                    <div className="text-center mb-8">
+                      <Users className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                      <h1 className="text-3xl font-bold text-gray-800 mb-2">{config.classe}</h1>
+                      <p className="text-gray-600 font-medium">Configuration de la poule</p>
+                    </div>
                     {config.nombreJoueurs === 0 ? (
                       <div>
-                        <p className="text-center font-bold mb-6">Nombre d'élèves ?</p>
+                        <p className="text-center font-bold mb-6 text-lg">Combien d'élèves ?</p>
                         <div className="grid grid-cols-4 gap-3">
                           {[2, 3, 4, 5].map(nb => (
-                            <button 
-                              key={nb} 
-                              onClick={() => {
-                                setConfig({...config, nombreJoueurs: nb, joueurs: []});
-                                for (let i = 0; i < nb; i++) setTimeout(() => ajouterJoueur(), i * 50);
-                              }}
-                              className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl hover:shadow-xl transition"
-                            >
+                            <button key={nb} onClick={() => {
+                              setConfig({...config, nombreJoueurs: nb, joueurs: []});
+                              for (let i = 0; i < nb; i++) setTimeout(() => ajouterJoueur(), i * 50);
+                            }} className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl shadow-lg">
                               {nb}
                             </button>
                           ))}
@@ -460,50 +518,109 @@
                         <div className="space-y-3 mb-6">
                           {config.joueurs.map((joueur, index) => (
                             <div key={index} className="grid grid-cols-2 gap-2">
-                              <input 
-                                type="text" 
-                                value={joueur.prenom} 
-                                onChange={(e) => modifierJoueur(index, 'prenom', e.target.value)}
-                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none"
-                                placeholder="Prénom" 
-                              />
-                              <input 
-                                type="text" 
-                                value={joueur.nom} 
-                                onChange={(e) => modifierJoueur(index, 'nom', e.target.value)}
-                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none"
-                                placeholder="Nom" 
-                              />
+                              <input type="text" value={joueur.prenom} onChange={(e) => modifierJoueur(index, 'prenom', e.target.value)}
+                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none" placeholder="Prénom" />
+                              <input type="text" value={joueur.nom} onChange={(e) => modifierJoueur(index, 'nom', e.target.value)}
+                                className="px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none" placeholder="Nom" />
                             </div>
                           ))}
                         </div>
                         <div className="flex gap-3">
-                          <button 
-                            onClick={() => setConfig({...config, nombreJoueurs: 0, joueurs: []})} 
-                            className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold"
-                          >
-                            ← Retour
-                          </button>
-                          <button 
-                            onClick={() => {
-                              // Config rapide pour test
-                              setConfig({
-                                ...config,
-                                objetEnseignement: 'zones',
-                                typeMatch: '11pts',
-                                pointsDoubles: true,
-                                mortSubite: false
-                              });
-                              demarrerPoule();
-                            }} 
-                            disabled={config.joueurs.some(j => !j.nom.trim() || !j.prenom.trim())}
-                            className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300"
-                          >
-                            Démarrer test →
-                          </button>
+                          <button onClick={() => setConfig({...config, nombreJoueurs: 0, joueurs: []})}
+                            className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold">← Retour</button>
+                          <button onClick={() => setPhase('objetEnseignement')} disabled={config.joueurs.some(j => !j.nom.trim() || !j.prenom.trim())}
+                            className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300">Suivant →</button>
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (phase === 'objetEnseignement') {
+            return (
+              <div className="min-h-screen p-4">
+                <div className="max-w-2xl mx-auto">
+                  <div className="glass rounded-3xl shadow-2xl p-8">
+                    <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                      🎯 Objet d'enseignement
+                    </h2>
+                    <div className="space-y-3 mb-6">
+                      {[
+                        {val: 'smash', icon: Zap, title: '⚡ Travail du smash annoncé', desc: 'Crier "smash" avant', color: 'purple'},
+                        {val: 'zones', icon: Target, title: '🎯 Viser zones dangereuses', desc: 'Zones avant/arrière', color: 'orange'},
+                        {val: 'espaces', icon: MapPin, title: '📍 Viser espaces libres', desc: 'Où l\'adversaire n\'est pas', color: 'green'}
+                      ].map(({val, icon: Icon, title, desc, color}) => (
+                        <button key={val} onClick={() => setConfig({...config, objetEnseignement: val})}
+                          className={`w-full p-5 rounded-2xl border-2 transition shadow-md ${
+                            config.objetEnseignement === val ? `border-${color}-600 bg-gradient-to-r from-${color}-50 to-${color}-100` : 'border-gray-300 bg-white'
+                          }`}>
+                          <div className="flex items-center gap-4">
+                            <Icon className={`w-8 h-8 text-${color}-600`} />
+                            <div className="text-left"><div className="font-bold text-lg">{title}</div><div className="text-sm text-gray-600">{desc}</div></div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setPhase('config')} className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold">← Retour</button>
+                      <button onClick={() => setPhase('typeMatch')} disabled={!config.objetEnseignement}
+                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300">Suivant →</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (phase === 'typeMatch') {
+            return (
+              <div className="min-h-screen p-4">
+                <div className="max-w-2xl mx-auto">
+                  <div className="glass rounded-3xl shadow-2xl p-8">
+                    <h2 className="text-3xl font-bold text-center mb-6">⚙️ Configuration du match</h2>
+                    <div className="mb-6">
+                      <h3 className="font-bold text-gray-700 mb-3">Type de match</h3>
+                      <div className="space-y-3">
+                        {[
+                          {value: '3min', icon: Clock, title: 'Match en 3 minutes'},
+                          {value: '11pts', icon: Target, title: 'Match en 11 points'},
+                          {value: '15pts', icon: Target, title: 'Match en 15 points'}
+                        ].map(({value, icon: Icon, title}) => (
+                          <button key={value} onClick={() => setConfig({...config, typeMatch: value})}
+                            className={`w-full p-4 rounded-xl border-2 transition ${
+                              config.typeMatch === value ? 'border-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50' : 'border-gray-300 bg-white'
+                            }`}>
+                            <div className="flex items-center gap-3">
+                              <Icon className="w-7 h-7 text-emerald-600" />
+                              <div className="font-bold">{title}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mb-6">
+                      <h3 className="font-bold text-gray-700 mb-3">Options</h3>
+                      <div className="space-y-3">
+                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer hover:bg-blue-50 border-gray-300">
+                          <input type="checkbox" checked={config.pointsDoubles} onChange={(e) => setConfig({...config, pointsDoubles: e.target.checked})}
+                            className="w-5 h-5 text-blue-600 rounded" />
+                          <div className="ml-3"><div className="font-bold">🏆 Points doubles</div></div>
+                        </label>
+                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer hover:bg-red-50 border-gray-300">
+                          <input type="checkbox" checked={config.mortSubite} onChange={(e) => setConfig({...config, mortSubite: e.target.checked})}
+                            className="w-5 h-5 text-red-600 rounded" />
+                          <div className="ml-3"><div className="font-bold">⚠️ Mort subite</div></div>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button onClick={() => setPhase('objetEnseignement')} className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold">← Retour</button>
+                      <button onClick={demarrerPoule} disabled={!config.typeMatch}
+                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300">🚀 Démarrer</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -516,57 +633,196 @@
               <div className="min-h-screen p-4">
                 <div className="max-w-4xl mx-auto">
                   <div className="glass rounded-3xl p-6 mb-6">
-                    <h2 className="text-2xl font-bold mb-4">{config.classe}</h2>
-                    <div className="grid gap-3">
+                    <div className="flex justify-between items-center mb-4">
+                      <div><h2 className="text-2xl font-bold text-emerald-700">{config.classe}</h2></div>
+                      <div className="text-sm"><span className="text-green-600 font-bold">{matchsTermines.length}</span> / {matchsOrdonnes.length}</div>
+                    </div>
+                    <div className="grid gap-3 mb-6">
                       {matchsOrdonnes.map((match, index) => {
                         const [j1, j2] = match;
                         const estTermine = isMatchTermine(j1, j2);
                         const matchKey = getMatchKey(j1, j2);
                         const matchData = matchsTermines.find(m => m.key === matchKey);
-
                         return (
                           <div key={index} className={`${estTermine ? 'match-done' : 'match-pending'} text-white p-4 rounded-xl flex items-center justify-between`}>
                             <div className="flex items-center gap-3">
-                              <div className="bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">
-                                {index + 1}
-                              </div>
-                              <span className="font-bold">
-                                {j1.prenom} vs {j2.prenom}
-                              </span>
+                              <div className="bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">{index + 1}</div>
+                              <span className="font-bold">{j1.prenom} {j1.nom} vs {j2.prenom} {j2.nom}</span>
                             </div>
                             {estTermine ? (
-                              <span className="font-bold">✓ {matchData.scoreJ1}-{matchData.scoreJ2}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="font-bold">✓ {matchData.scoreJ1}-{matchData.scoreJ2}</span>
+                                <button onClick={() => modifierMatch(matchData)} className="bg-white text-emerald-600 p-2 rounded-lg"><Edit className="w-5 h-5" /></button>
+                              </div>
                             ) : (
-                              <button
-                                onClick={() => demarrerMatch(j1, j2)}
-                                className="bg-white text-blue-600 px-5 py-2 rounded-lg font-bold"
-                              >
-                                Jouer
-                              </button>
+                              <button onClick={() => demarrerMatch(j1, j2)} className="bg-white text-blue-600 px-5 py-2 rounded-lg font-bold">Jouer</button>
                             )}
                           </div>
                         );
                       })}
                     </div>
+
+                    <div className="mb-6">
+                      <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Trophy className="w-6 h-6 text-yellow-500" />Classement</h2>
+                      <div className="space-y-2">
+                        {Object.values(donnees).sort((a, b) => {
+                          if (b.matchsGagnes !== a.matchsGagnes) return b.matchsGagnes - a.matchsGagnes;
+                          return (b.pointsMarques - b.pointsEncaisses) - (a.pointsMarques - a.pointsEncaisses);
+                        }).map((joueur, index) => {
+                          const diff = joueur.pointsMarques - joueur.pointsEncaisses;
+                          return (
+                            <div key={`${joueur.prenom}_${joueur.nom}`} className="flex justify-between items-center bg-white p-4 rounded-xl border-2 border-gray-200">
+                              <div className="flex items-center gap-4">
+                                <div className={`font-bold text-2xl ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
+                                </div>
+                                <span className="font-bold text-lg">{joueur.prenom} {joueur.nom}</span>
+                              </div>
+                              <div className="flex gap-4 text-sm">
+                                <span className="text-green-600 font-bold">{joueur.matchsGagnes}V</span>
+                                <span className="text-red-600 font-bold">{joueur.matchsJoues - joueur.matchsGagnes}D</span>
+                                <span className={`font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                  ({diff > 0 ? '+' : ''}{diff})
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
+
+                  <div className="flex gap-3 mb-4">
+                    <button onClick={() => { alert('💾 Séance sauvegardée !'); sauvegarderDonnees(); }}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                      <Save className="w-5 h-5" />Sauvegarder
+                    </button>
+                    <button onClick={() => { if (confirm('Voir les statistiques ?')) setPhase('stats'); }}
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                      <BarChart className="w-5 h-5" />Stats
+                    </button>
+                  </div>
+
+                  <button onClick={() => {
+                    if (confirm('Nouvelle poule ?')) {
+                      setConfig({ classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false });
+                      setPoule([]); setMatchEnCours(null); setDonnees({}); setMatchsTermines([]); setPhase('classe');
+                    }
+                  }} className="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                    <RotateCcw className="w-5 h-5" />Nouvelle poule
+                  </button>
+                </div>
+
+                {showEditMatch && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="glass rounded-2xl p-6 max-w-md w-full">
+                      <h3 className="text-xl font-bold mb-4">✏️ Modifier le résultat</h3>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j1]?.prenom}</label>
+                          <input type="number" id="newScoreJ1" defaultValue={showEditMatch.scoreJ1}
+                            className="w-full px-4 py-3 border-2 border-emerald-300 rounded-xl text-center text-2xl font-bold" />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j2]?.prenom}</label>
+                          <input type="number" id="newScoreJ2" defaultValue={showEditMatch.scoreJ2}
+                            className="w-full px-4 py-3 border-2 border-emerald-300 rounded-xl text-center text-2xl font-bold" />
+                        </div>
+                      </div>
+                      <div className="flex gap-3">
+                        <button onClick={() => setShowEditMatch(null)} className="flex-1 bg-gray-500 text-white py-3 rounded-xl font-bold">Annuler</button>
+                        <button onClick={() => {
+                          sauvegarderModificationMatch(parseInt(document.getElementById('newScoreJ1').value), parseInt(document.getElementById('newScoreJ2').value));
+                        }} className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-xl font-bold">💾 OK</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          if (phase === 'stats') {
+            return (
+              <div className="min-h-screen p-4">
+                <div className="max-w-6xl mx-auto">
+                  <div className="glass rounded-3xl p-8 mb-6">
+                    <h1 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                      📊 Statistiques - {config.classe}
+                    </h1>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {Object.values(donnees).map(joueur => {
+                        const tauxVictoire = joueur.matchsJoues > 0 ? (joueur.matchsGagnes / joueur.matchsJoues) * 100 : 0;
+                        const progressionGlobale = joueur.zonesDangereuses + joueur.smashAnnonces + joueur.zonesLibres + joueur.pointsDoubles;
+                        return (
+                          <div key={`${joueur.prenom}_${joueur.nom}`} className="stat-card rounded-2xl p-6">
+                            <h3 className="text-2xl font-bold mb-4 text-emerald-700">{joueur.prenom} {joueur.nom}</h3>
+                            <div className="mb-4">
+                              <div className="flex justify-between mb-2"><span>Taux victoire</span><span className="font-bold">{tauxVictoire.toFixed(0)}%</span></div>
+                              <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-4 rounded-full" style={{width: `${tauxVictoire}%`}}></div></div>
+                            </div>
+                            <div className="grid grid-cols-5 gap-2 mb-4 text-center">
+                              <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-green-600">{joueur.matchsGagnes}</div><div className="text-xs">Victoires</div></div>
+                              <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-orange-600">{joueur.zonesDangereuses}</div><div className="text-xs">ZD</div></div>
+                              <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-purple-600">{joueur.smashAnnonces}</div><div className="text-xs">SA</div></div>
+                              <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-teal-600">{joueur.zonesLibres}</div><div className="text-xs">ZL</div></div>
+                              <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-blue-600">{joueur.pointsDoubles}</div><div className="text-xs">×2</div></div>
+                            </div>
+                            {joueur.pointsTerrain.length > 0 && <TerrainBadminton points={joueur.pointsTerrain} joueurNom={`${joueur.prenom}`} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button onClick={() => setPhase('selection')} className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-4 rounded-xl font-bold">
+                    ← Retour
+                  </button>
                 </div>
               </div>
             );
           }
 
           if (phase === 'jeu' && matchEnCours) {
+            const getButtonForObjet = (joueur) => {
+              const pointsText = config.pointsDoubles ? '+2' : '+1';
+              if (config.objetEnseignement === 'smash') {
+                return (
+                  <button onClick={() => ajouterPoint(joueur, 'smashAnnonce')}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
+                    <Zap className="w-6 h-6" />Smash ({pointsText})
+                  </button>
+                );
+              } else {
+                return (
+                  <button onClick={() => setShowTerrain(joueur)}
+                    className={`w-full ${config.objetEnseignement === 'zones' ? 'bg-gradient-to-r from-orange-500 to-red-500' : 'bg-gradient-to-r from-green-500 to-teal-500'} text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2`}>
+                    {config.objetEnseignement === 'zones' ? <Target className="w-6 h-6" /> : <MapPin className="w-6 h-6" />}
+                    {config.objetEnseignement === 'zones' ? 'Zone dangereuse' : 'Zone libre'} ({pointsText})
+                  </button>
+                );
+              }
+            };
+
             return (
               <div className="min-h-screen p-4">
                 <div className="max-w-6xl mx-auto">
+                  {config.typeMatch === '3min' && (
+                    <div className="glass rounded-2xl p-4 mb-6 text-center">
+                      <div className={`inline-block px-8 py-3 rounded-full font-bold text-3xl ${timer <= 30 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        ⏱️ {formatTimer(timer)}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="glass rounded-3xl p-8 mb-6">
-                    <div className="grid grid-cols-3 gap-6 items-center mb-6">
+                    <div className="grid grid-cols-3 gap-6 items-center">
                       <div className="text-center">
-                        <h3 className="text-2xl font-bold mb-3 text-blue-600">{matchEnCours.prenomJ1}</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-blue-600">{matchEnCours.prenomJ1} {matchEnCours.nomJ1}</h3>
                         <div className="text-7xl font-extrabold text-blue-600">{matchEnCours.scoreJ1}</div>
                       </div>
                       <div className="text-center text-5xl font-extrabold text-gray-400">VS</div>
                       <div className="text-center">
-                        <h3 className="text-2xl font-bold mb-3 text-red-600">{matchEnCours.prenomJ2}</h3>
+                        <h3 className="text-2xl font-bold mb-3 text-red-600">{matchEnCours.prenomJ2} {matchEnCours.nomJ2}</h3>
                         <div className="text-7xl font-extrabold text-red-600">{matchEnCours.scoreJ2}</div>
                       </div>
                     </div>
@@ -576,169 +832,96 @@
                     <div className="glass rounded-2xl p-6">
                       <h3 className="text-xl font-bold text-blue-600 mb-4">{matchEnCours.prenomJ1}</h3>
                       <div className="space-y-3">
-                        <button 
-                          onClick={() => ajouterPoint('j1', 'normal')} 
-                          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold"
-                        >
-                          Point normal (+1)
-                        </button>
-                        <button 
-                          onClick={() => setShowTerrain('j1')}
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-5 rounded-xl font-bold"
-                        >
-                          Zone dangereuse (+{config.pointsDoubles ? '2' : '1'})
-                        </button>
+                        <button onClick={() => ajouterPoint('j1', 'normal')} className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold text-lg">Point normal (+1)</button>
+                        {getButtonForObjet('j1')}
+                      </div>
+                      <div className="mt-4 p-4 bg-blue-50 rounded-xl">
+                        <div className="grid grid-cols-3 gap-3 text-xs">
+                          <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-orange-600">{matchEnCours.statsJ1.zonesDangereuses}</div><div>ZD</div></div>
+                          <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ1.smashAnnonces}</div><div>SA</div></div>
+                          <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ1.zonesLibres}</div><div>ZL</div></div>
+                        </div>
                       </div>
                     </div>
 
                     <div className="glass rounded-2xl p-6">
                       <h3 className="text-xl font-bold text-red-600 mb-4">{matchEnCours.prenomJ2}</h3>
                       <div className="space-y-3">
-                        <button 
-                          onClick={() => ajouterPoint('j2', 'normal')} 
-                          className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-5 rounded-xl font-bold"
-                        >
-                          Point normal (+1)
-                        </button>
-                        <button 
-                          onClick={() => setShowTerrain('j2')}
-                          className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-5 rounded-xl font-bold"
-                        >
-                          Zone dangereuse (+{config.pointsDoubles ? '2' : '1'})
-                        </button>
+                        <button onClick={() => ajouterPoint('j2', 'normal')} className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-5 rounded-xl font-bold text-lg">Point normal (+1)</button>
+                        {getButtonForObjet('j2')}
+                      </div>
+                      <div className="mt-4 p-4 bg-red-50 rounded-xl">
+                        <div className="grid grid-cols-3 gap-3 text-xs">
+                          <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-orange-600">{matchEnCours.statsJ2.zonesDangereuses}</div><div>ZD</div></div>
+                          <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ2.smashAnnonces}</div><div>SA</div></div>
+                          <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ2.zonesLibres}</div><div>ZL</div></div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => { if (confirm('Terminer ?')) terminerMatch(); }}
-                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold"
-                    >
-                      ✓ Terminer
-                    </button>
-                    <button 
-                      onClick={annulerDernierPoint} 
-                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-5 rounded-xl font-bold"
-                    >
-                      ← Annuler ({historiquePoints.length})
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <button onClick={() => { if (confirm('Terminer ?')) terminerMatch(); }}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold text-lg">✓ Terminer</button>
+                    <button onClick={annulerDernierPoint} disabled={historiquePoints.length === 0}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-5 rounded-xl font-bold text-lg disabled:from-gray-300 flex items-center justify-center gap-2">
+                      <RotateCcw className="w-5 h-5" />Annuler ({historiquePoints.length})
                     </button>
                   </div>
+
+                  <button onClick={() => { if (confirm('Annuler ?')) { setMatchEnCours(null); setPhase('selection'); }}}
+                    className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-4 rounded-xl font-bold">← Retour</button>
                 </div>
 
-                {/* PAGE PLEIN ÉCRAN POUR LES ZONES - LA SOLUTION ! */}
+                {/* PAGE PLEIN ÉCRAN POUR LES ZONES */}
                 <div className={`page-zones-fullscreen ${showTerrain ? 'active' : ''}`}>
-                  <div style={{color: 'white', textAlign: 'center', fontSize: '24px', fontWeight: 'bold', marginBottom: '20px'}}>
+                  <div style={{color: 'white', textAlign: 'center', fontSize: '28px', fontWeight: 'bold', marginBottom: '30px'}}>
                     🏸 Sélectionnez la zone
                   </div>
-                  
-                  <div style={{flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px'}}>
-                    <button 
-                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 1); setShowTerrain(false); }}
-                      style={{
-                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                  <div style={{flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
+                    {[
+                      {id: 1, label: 'Avant Gauche', emoji: '⬆️', color: 'linear-gradient(135deg, #10b981, #059669)'},
+                      {id: 2, label: 'Avant Droite', emoji: '⬆️', color: 'linear-gradient(135deg, #10b981, #059669)'},
+                      {id: 3, label: 'Arrière Gauche', emoji: '⬇️', color: 'linear-gradient(135deg, #047857, #065f46)'},
+                      {id: 4, label: 'Arrière Droite', emoji: '⬇️', color: 'linear-gradient(135deg, #047857, #065f46)'}
+                    ].map(zone => (
+                      <button key={zone.id} onClick={() => {
+                        const type = config.objetEnseignement === 'zones' ? 'zoneDangereuse' : 'zoneLibre';
+                        ajouterPointAvecZone(showTerrain, type, zone.id);
+                        setShowTerrain(false);
+                      }} style={{
+                        background: zone.color,
                         color: 'white',
                         border: 'none',
-                        borderRadius: '15px',
-                        fontSize: '16px',
+                        borderRadius: '20px',
+                        fontSize: '18px',
                         fontWeight: 'bold',
-                        padding: '20px',
-                        minHeight: '140px',
+                        padding: '30px',
+                        minHeight: '160px',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{fontSize: '40px'}}>⬆️</div>
-                      <div>Avant Gauche</div>
-                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>1</div>
-                    </button>
-                    
-                    <button 
-                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 2); setShowTerrain(false); }}
-                      style={{
-                        background: 'linear-gradient(135deg, #10b981, #059669)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        padding: '20px',
-                        minHeight: '140px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{fontSize: '40px'}}>⬆️</div>
-                      <div>Avant Droite</div>
-                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>2</div>
-                    </button>
-                    
-                    <button 
-                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 3); setShowTerrain(false); }}
-                      style={{
-                        background: 'linear-gradient(135deg, #047857, #065f46)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        padding: '20px',
-                        minHeight: '140px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{fontSize: '40px'}}>⬇️</div>
-                      <div>Arrière Gauche</div>
-                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>3</div>
-                    </button>
-                    
-                    <button 
-                      onClick={() => { ajouterPointAvecZone(showTerrain, 'zoneDangereuse', 4); setShowTerrain(false); }}
-                      style={{
-                        background: 'linear-gradient(135deg, #047857, #065f46)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '15px',
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        padding: '20px',
-                        minHeight: '140px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <div style={{fontSize: '40px'}}>⬇️</div>
-                      <div>Arrière Droite</div>
-                      <div style={{fontSize: '36px', fontWeight: 'bold'}}>4</div>
-                    </button>
+                        gap: '12px',
+                        cursor: 'pointer'
+                      }}>
+                        <div style={{fontSize: '50px'}}>{zone.emoji}</div>
+                        <div style={{fontSize: '18px'}}>{zone.label}</div>
+                        <div style={{fontSize: '48px', fontWeight: 'bold'}}>{zone.id}</div>
+                      </button>
+                    ))}
                   </div>
-                  
-                  <button 
-                    onClick={() => setShowTerrain(false)}
-                    style={{
-                      width: '100%',
-                      background: '#6b7280',
-                      color: 'white',
-                      border: 'none',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      fontSize: '18px',
-                      fontWeight: 'bold'
-                    }}
-                  >
+                  <button onClick={() => setShowTerrain(false)} style={{
+                    width: '100%',
+                    background: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    padding: '20px',
+                    borderRadius: '15px',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}>
                     ✕ Annuler
                   </button>
                 </div>
@@ -750,7 +933,7 @@
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<BadmintonTracker />);
-        console.log('✅ VERSION TABLETTES NEUVES - Page plein écran activée');
+        console.log('✅ Badminton Pro v2.0 COMPLET chargé');
     </script>
 </body>
 </html>
