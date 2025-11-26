@@ -4,7 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#047857">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Badminton Pro">
     <title>Badminton Pro</title>
+    
+    <!-- ICÔNE DE L'APPLICATION -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23fbbf24'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle'%3E🏸%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23fbbf24'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle'%3E🏸%3C/text%3E%3C/svg%3E">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -69,7 +77,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        console.log('🏸 Badminton Pro v2.0 COMPLET - Page plein écran zones');
+        console.log('🏸 Badminton Pro v2.1 - Scores corrigés + Icône');
 
         const Icon = ({d, className = "w-6 h-6"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>;
         const Users = ({className}) => <Icon className={className} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />;
@@ -101,6 +109,21 @@
           const [showEditMatch, setShowEditMatch] = useState(null);
           const [seances, setSeances] = useState({});
           const [currentSeance, setCurrentSeance] = useState(1);
+
+          // CORRECTION CRITIQUE : Détection automatique de fin de match
+          useEffect(() => {
+            if (matchEnCours && config.typeMatch !== '3min') {
+              console.log('✓ Vérif scores:', matchEnCours.scoreJ1, 'vs', matchEnCours.scoreJ2, '/ max:', matchEnCours.pointsMax);
+              
+              if (matchEnCours.scoreJ1 >= matchEnCours.pointsMax) {
+                console.log('🏆 J1 gagne avec', matchEnCours.scoreJ1, 'points !');
+                setTimeout(() => terminerMatch(), 800);
+              } else if (matchEnCours.scoreJ2 >= matchEnCours.pointsMax) {
+                console.log('🏆 J2 gagne avec', matchEnCours.scoreJ2, 'points !');
+                setTimeout(() => terminerMatch(), 800);
+              }
+            }
+          }, [matchEnCours?.scoreJ1, matchEnCours?.scoreJ2]);
 
           useEffect(() => {
             const interval = setInterval(() => { sauvegarderDonnees(); }, 5000);
@@ -210,6 +233,7 @@
           const demarrerMatch = (j1, j2) => {
             if (isMatchTermine(j1, j2)) { alert('Ce match a déjà été joué.'); return; }
             const pointsMax = config.typeMatch === '11pts' ? 11 : config.typeMatch === '15pts' ? 15 : 999;
+            console.log('🎮 Démarrage match - Type:', config.typeMatch, '- Points max:', pointsMax);
             setMatchEnCours({
               joueur1: `${j1.prenom}_${j1.nom}`, joueur2: `${j2.prenom}_${j2.nom}`, 
               prenomJ1: j1.prenom, nomJ1: j1.nom, prenomJ2: j2.prenom, nomJ2: j2.nom,
@@ -238,6 +262,7 @@
                 else if (type === 'smashAnnonce') nouveau.statsJ1.smashAnnonces++;
                 else if (type === 'zoneLibre') nouveau.statsJ1.zonesLibres++;
                 if (zone) nouveau.terrainJ1.push(zone);
+                console.log('➕ Point J1 -', nouveau.prenomJ1, ':', nouveau.scoreJ1, '/', nouveau.pointsMax);
               } else {
                 nouveau.scoreJ2++;
                 if (isDouble && config.pointsDoubles) nouveau.scoreJ2++;
@@ -246,6 +271,7 @@
                 else if (type === 'smashAnnonce') nouveau.statsJ2.smashAnnonces++;
                 else if (type === 'zoneLibre') nouveau.statsJ2.zonesLibres++;
                 if (zone) nouveau.terrainJ2.push(zone);
+                console.log('➕ Point J2 -', nouveau.prenomJ2, ':', nouveau.scoreJ2, '/', nouveau.pointsMax);
               }
 
               if (config.mortSubite) {
@@ -261,12 +287,8 @@
                 }
               }
 
-              if (config.typeMatch !== '3min') {
-                if (nouveau.scoreJ1 >= nouveau.pointsMax || nouveau.scoreJ2 >= nouveau.pointsMax) {
-                  setTimeout(() => terminerMatch(), 100);
-                }
-              }
-
+              // La fin de match est maintenant gérée par useEffect (plus fiable)
+              
               return nouveau;
             });
           };
@@ -290,7 +312,13 @@
           };
 
           const terminerMatch = (mortSubite = false, gagnant = null) => {
-            if (!matchEnCours) return;
+            if (!matchEnCours) {
+              console.log('⚠️ terminerMatch appelé mais pas de matchEnCours');
+              return;
+            }
+            
+            console.log('🏁 FIN DE MATCH - Scores finaux:', matchEnCours.scoreJ1, '-', matchEnCours.scoreJ2);
+            
             const {joueur1, joueur2, prenomJ1, nomJ1, prenomJ2, nomJ2, scoreJ1, scoreJ2, statsJ1, statsJ2, pointsDoublesJ1, pointsDoublesJ2, terrainJ1, terrainJ2} = matchEnCours;
             const victoireJ1 = mortSubite ? gagnant === 'j1' : scoreJ1 > scoreJ2;
             const victoireJ2 = mortSubite ? gagnant === 'j2' : scoreJ2 > scoreJ1;
@@ -424,7 +452,7 @@
                     <div className="text-center mb-8">
                       <div className="badminton-icon">🏸</div>
                       <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">Badminton Pro</h1>
-                      <p className="text-gray-600 font-medium">Application EPS v2.0</p>
+                      <p className="text-gray-600 font-medium">v2.1 - Scores corrigés + Icône</p>
                     </div>
                     <div className="mb-6">
                       <label className="block text-sm font-bold text-gray-700 mb-3">📚 Nom de la classe</label>
@@ -933,7 +961,7 @@
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<BadmintonTracker />);
-        console.log('✅ Badminton Pro v2.0 COMPLET chargé');
+        console.log('✅ Badminton Pro v2.1 chargé - Scores corrigés');
     </script>
 </body>
 </html>
