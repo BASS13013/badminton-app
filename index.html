@@ -70,6 +70,23 @@
         .page-zones-fullscreen.active {
             display: flex !important;
         }
+        
+        /* PAGE PLEIN ÉCRAN POUR LES ERREURS DE SERVICE */
+        .page-service-erreur-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .page-service-erreur-fullscreen.active {
+            display: flex !important;
+        }
     </style>
 </head>
 <body>
@@ -77,7 +94,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        console.log('🏸 Badminton Pro v2.1 - Scores corrigés + Icône');
+        console.log('🏸 Badminton Pro v2.2 - Avec objet Service');
 
         const Icon = ({d, className = "w-6 h-6"}) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} /></svg>;
         const Users = ({className}) => <Icon className={className} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />;
@@ -92,6 +109,7 @@
         const Edit = ({className}) => <Icon className={className} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />;
         const Save = ({className}) => <Icon className={className} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />;
         const BarChart = ({className}) => <Icon className={className} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />;
+        const Send = ({className}) => <Icon className={className} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />;
 
         function BadmintonTracker() {
           const [config, setConfig] = useState({classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false});
@@ -105,6 +123,7 @@
           const [classes, setClasses] = useState({});
           const [showDeleteModal, setShowDeleteModal] = useState(false);
           const [showTerrain, setShowTerrain] = useState(false);
+          const [showServiceErreur, setShowServiceErreur] = useState(false);
           const [matchsTermines, setMatchsTermines] = useState([]);
           const [showEditMatch, setShowEditMatch] = useState(null);
           const [seances, setSeances] = useState({});
@@ -126,85 +145,61 @@
           }, [matchEnCours?.scoreJ1, matchEnCours?.scoreJ2]);
 
           useEffect(() => {
-            const interval = setInterval(() => { sauvegarderDonnees(); }, 5000);
-            return () => clearInterval(interval);
-          }, [donnees, matchsTermines, config, seances]);
-
-          const sauvegarderDonnees = () => {
-            try {
-              const dataToSave = { classes, config, donnees, matchsTermines, phase, poule, seances, currentSeance, timestamp: new Date().toISOString() };
-              localStorage.setItem('badminton-data', JSON.stringify(dataToSave));
-              localStorage.setItem('badminton-backup', JSON.stringify(dataToSave));
-            } catch (e) {}
-          };
-
-          useEffect(() => {
-            const saved = localStorage.getItem('badminton-data');
+            const saved = localStorage.getItem('badmintonData');
             if (saved) {
               try {
-                const data = JSON.parse(saved);
-                setClasses(data.classes || {});
-                setConfig(data.config || config);
-                setDonnees(data.donnees || {});
-                setMatchsTermines(data.matchsTermines || []);
-                setPhase(data.phase || 'classe');
-                setPoule(data.poule || []);
-                setSeances(data.seances || {});
-                setCurrentSeance(data.currentSeance || 1);
-              } catch(e) {}
+                const parsed = JSON.parse(saved);
+                setClasses(parsed.classes || {});
+                setSeances(parsed.seances || {});
+              } catch (err) { console.error('Erreur chargement', err); }
             }
           }, []);
 
+          const sauvegarderDonnees = () => {
+            try {
+              localStorage.setItem('badmintonData', JSON.stringify({classes, seances}));
+              console.log('✅ Données sauvegardées');
+            } catch (err) { console.error('❌ Erreur sauvegarde', err); }
+          };
+
           useEffect(() => {
-            let interval;
             if (timerActif && timer > 0) {
-              interval = setInterval(() => {
-                setTimer(prev => { if (prev <= 1) { setTimerActif(false); alert('Temps écoulé !'); return 0; } return prev - 1; });
-              }, 1000);
+              const interval = setInterval(() => setTimer(t => t > 0 ? t - 1 : 0), 1000);
+              return () => clearInterval(interval);
+            } else if (timerActif && timer === 0 && matchEnCours) {
+              setTimerActif(false);
+              terminerMatch();
             }
-            return () => clearInterval(interval);
           }, [timerActif, timer]);
 
-          const formatTimer = (s) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
-
-          const genererOrdreMatchs = (joueurs) => {
-            const n = joueurs.length;
-            const matchs = [];
-            if (n === 2) {
-              matchs.push([joueurs[0], joueurs[1]]);
-            } else {
-              const rounds = n % 2 === 0 ? n - 1 : n;
-              const playersPerRound = n % 2 === 0 ? n : n + 1;
-              let players = [...joueurs];
-              if (n % 2 !== 0) players.push(null);
-              for (let round = 0; round < rounds; round++) {
-                for (let i = 0; i < playersPerRound / 2; i++) {
-                  const j1 = players[i];
-                  const j2 = players[playersPerRound - 1 - i];
-                  if (j1 && j2) matchs.push([j1, j2]);
-                }
-                players = [players[0], players[playersPerRound - 1], ...players.slice(1, playersPerRound - 1)];
-              }
-            }
-            return matchs;
+          const formatTimer = (secondes) => {
+            const mins = Math.floor(secondes / 60);
+            const secs = secondes % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
           };
 
           const ajouterJoueur = () => {
-            setConfig(prev => ({...prev, joueurs: [...prev.joueurs, { nom: `Joueur${prev.joueurs.length + 1}`, prenom: '' }]}));
+            const nouvelleConfig = {...config, joueurs: [...config.joueurs, {prenom: '', nom: ''}]};
+            setConfig(nouvelleConfig);
           };
 
-          const modifierJoueur = (index, field, value) => {
-            const nouveaux = [...config.joueurs];
-            nouveaux[index][field] = value;
-            setConfig({...config, joueurs: nouveaux});
+          const modifierJoueur = (index, champ, valeur) => {
+            const nouveauxJoueurs = [...config.joueurs];
+            nouveauxJoueurs[index][champ] = valeur;
+            setConfig({...config, joueurs: nouveauxJoueurs});
           };
 
           const demarrerPoule = () => {
             const nouvelleDonnees = {};
             config.joueurs.forEach(j => {
               nouvelleDonnees[`${j.prenom}_${j.nom}`] = {
-                nom: j.nom, prenom: j.prenom, zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0,
-                pointsDoubles: 0, matchsJoues: 0, matchsGagnes: 0, pointsMarques: 0, pointsEncaisses: 0,
+                nom: j.nom, prenom: j.prenom, 
+                zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0,
+                pointsSurService: 0, servicesRates: 0,
+                erreursServiceNonTouche: 0, erreursServiceRiviere: 0,
+                erreursServiceNonCroise: 0, erreursServiceFilet: 0,
+                pointsDoubles: 0, matchsJoues: 0, matchsGagnes: 0, 
+                pointsMarques: 0, pointsEncaisses: 0,
                 defaitesMortSubite: 0, victoires: [], pointsTerrain: []
               };
             });
@@ -238,8 +233,10 @@
               joueur1: `${j1.prenom}_${j1.nom}`, joueur2: `${j2.prenom}_${j2.nom}`, 
               prenomJ1: j1.prenom, nomJ1: j1.nom, prenomJ2: j2.prenom, nomJ2: j2.nom,
               scoreJ1: 0, scoreJ2: 0, pointsDoublesJ1: 0, pointsDoublesJ2: 0,
-              statsJ1: { zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0 },
-              statsJ2: { zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0 },
+              statsJ1: { zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0, pointsSurService: 0, servicesRates: 0 },
+              statsJ2: { zonesDangereuses: 0, smashAnnonces: 0, zonesLibres: 0, pointsSurService: 0, servicesRates: 0 },
+              erreursServiceJ1: { nonTouche: 0, riviere: 0, nonCroise: 0, filet: 0 },
+              erreursServiceJ2: { nonTouche: 0, riviere: 0, nonCroise: 0, filet: 0 },
               terrainJ1: [], terrainJ2: [], pointsMax, 
               changementCote: Math.floor(pointsMax / 2), coteChange: false
             });
@@ -261,6 +258,7 @@
                 if (type === 'zoneDangereuse') nouveau.statsJ1.zonesDangereuses++;
                 else if (type === 'smashAnnonce') nouveau.statsJ1.smashAnnonces++;
                 else if (type === 'zoneLibre') nouveau.statsJ1.zonesLibres++;
+                else if (type === 'pointSurService') nouveau.statsJ1.pointsSurService++;
                 if (zone) nouveau.terrainJ1.push(zone);
                 console.log('➕ Point J1 -', nouveau.prenomJ1, ':', nouveau.scoreJ1, '/', nouveau.pointsMax);
               } else {
@@ -270,6 +268,7 @@
                 if (type === 'zoneDangereuse') nouveau.statsJ2.zonesDangereuses++;
                 else if (type === 'smashAnnonce') nouveau.statsJ2.smashAnnonces++;
                 else if (type === 'zoneLibre') nouveau.statsJ2.zonesLibres++;
+                else if (type === 'pointSurService') nouveau.statsJ2.pointsSurService++;
                 if (zone) nouveau.terrainJ2.push(zone);
                 console.log('➕ Point J2 -', nouveau.prenomJ2, ':', nouveau.scoreJ2, '/', nouveau.pointsMax);
               }
@@ -287,8 +286,60 @@
                 }
               }
 
-              // La fin de match est maintenant gérée par useEffect (plus fiable)
+              return nouveau;
+            });
+          };
+
+          const ajouterServiceRate = (joueurServeur, typeErreur) => {
+            setMatchEnCours(prev => {
+              const nouveau = {...prev};
+              const joueurAdversaire = joueurServeur === 'j1' ? 'j2' : 'j1';
               
+              setHistoriquePoints(hist => [...hist, {
+                joueur: joueurAdversaire, 
+                type: 'serviceRate', 
+                typeErreur, 
+                joueurServeur,
+                etat: JSON.parse(JSON.stringify(prev))
+              }]);
+
+              // Le point va à l'adversaire
+              if (joueurAdversaire === 'j1') {
+                nouveau.scoreJ1++;
+              } else {
+                nouveau.scoreJ2++;
+              }
+
+              // On enregistre l'erreur du serveur
+              if (joueurServeur === 'j1') {
+                nouveau.statsJ1.servicesRates++;
+                if (typeErreur === 'nonTouche') nouveau.erreursServiceJ1.nonTouche++;
+                else if (typeErreur === 'riviere') nouveau.erreursServiceJ1.riviere++;
+                else if (typeErreur === 'nonCroise') nouveau.erreursServiceJ1.nonCroise++;
+                else if (typeErreur === 'filet') nouveau.erreursServiceJ1.filet++;
+              } else {
+                nouveau.statsJ2.servicesRates++;
+                if (typeErreur === 'nonTouche') nouveau.erreursServiceJ2.nonTouche++;
+                else if (typeErreur === 'riviere') nouveau.erreursServiceJ2.riviere++;
+                else if (typeErreur === 'nonCroise') nouveau.erreursServiceJ2.nonCroise++;
+                else if (typeErreur === 'filet') nouveau.erreursServiceJ2.filet++;
+              }
+
+              console.log('❌ Service raté -', joueurServeur, '- Type:', typeErreur, '- Point pour:', joueurAdversaire);
+
+              if (config.mortSubite) {
+                if (nouveau.pointsDoublesJ2 >= 3) { setTimeout(() => terminerMatch(true, 'j1'), 100); return nouveau; }
+                if (nouveau.pointsDoublesJ1 >= 3) { setTimeout(() => terminerMatch(true, 'j2'), 100); return nouveau; }
+              }
+
+              if (!nouveau.coteChange && config.typeMatch !== '3min') {
+                const total = nouveau.scoreJ1 + nouveau.scoreJ2;
+                if (total >= nouveau.changementCote) {
+                  nouveau.coteChange = true;
+                  setTimeout(() => alert('🔄 Changement de côté !'), 100);
+                }
+              }
+
               return nouveau;
             });
           };
@@ -319,7 +370,7 @@
             
             console.log('🏁 FIN DE MATCH - Scores finaux:', matchEnCours.scoreJ1, '-', matchEnCours.scoreJ2);
             
-            const {joueur1, joueur2, prenomJ1, nomJ1, prenomJ2, nomJ2, scoreJ1, scoreJ2, statsJ1, statsJ2, pointsDoublesJ1, pointsDoublesJ2, terrainJ1, terrainJ2} = matchEnCours;
+            const {joueur1, joueur2, prenomJ1, nomJ1, prenomJ2, nomJ2, scoreJ1, scoreJ2, statsJ1, statsJ2, pointsDoublesJ1, pointsDoublesJ2, terrainJ1, terrainJ2, erreursServiceJ1, erreursServiceJ2} = matchEnCours;
             const victoireJ1 = mortSubite ? gagnant === 'j1' : scoreJ1 > scoreJ2;
             const victoireJ2 = mortSubite ? gagnant === 'j2' : scoreJ2 > scoreJ1;
 
@@ -337,6 +388,12 @@
               nouveau[joueur1].zonesDangereuses += statsJ1.zonesDangereuses;
               nouveau[joueur1].smashAnnonces += statsJ1.smashAnnonces;
               nouveau[joueur1].zonesLibres += statsJ1.zonesLibres;
+              nouveau[joueur1].pointsSurService += statsJ1.pointsSurService;
+              nouveau[joueur1].servicesRates += statsJ1.servicesRates;
+              nouveau[joueur1].erreursServiceNonTouche += erreursServiceJ1.nonTouche;
+              nouveau[joueur1].erreursServiceRiviere += erreursServiceJ1.riviere;
+              nouveau[joueur1].erreursServiceNonCroise += erreursServiceJ1.nonCroise;
+              nouveau[joueur1].erreursServiceFilet += erreursServiceJ1.filet;
               nouveau[joueur1].pointsDoubles += pointsDoublesJ1;
               nouveau[joueur1].pointsTerrain.push(...terrainJ1);
               if (victoireJ1) {
@@ -353,6 +410,12 @@
               nouveau[joueur2].zonesDangereuses += statsJ2.zonesDangereuses;
               nouveau[joueur2].smashAnnonces += statsJ2.smashAnnonces;
               nouveau[joueur2].zonesLibres += statsJ2.zonesLibres;
+              nouveau[joueur2].pointsSurService += statsJ2.pointsSurService;
+              nouveau[joueur2].servicesRates += statsJ2.servicesRates;
+              nouveau[joueur2].erreursServiceNonTouche += erreursServiceJ2.nonTouche;
+              nouveau[joueur2].erreursServiceRiviere += erreursServiceJ2.riviere;
+              nouveau[joueur2].erreursServiceNonCroise += erreursServiceJ2.nonCroise;
+              nouveau[joueur2].erreursServiceFilet += erreursServiceJ2.filet;
               nouveau[joueur2].pointsDoubles += pointsDoublesJ2;
               nouveau[joueur2].pointsTerrain.push(...terrainJ2);
               if (victoireJ2) {
@@ -400,32 +463,59 @@
                   nouveau[match.j2].matchsGagnes++;
                 }
               }
+              setMatchsTermines(prev => prev.map(m => m === match ? {...m, scoreJ1: newScoreJ1, scoreJ2: newScoreJ2, victoireJ1: nouvelleVictoireJ1} : m));
+              setClasses(cl => ({...cl, [config.classe]: nouveau}));
+              sauvegarderDonnees();
               return nouveau;
             });
-            setMatchsTermines(prev => prev.map(m => 
-              m.key === showEditMatch.key ? {...m, scoreJ1: newScoreJ1, scoreJ2: newScoreJ2, victoireJ1: newScoreJ1 > newScoreJ2} : m
-            ));
             setShowEditMatch(null);
-            sauvegarderDonnees();
+          };
+
+          const supprimerMatch = (match) => {
+            if (!confirm('Supprimer ce match ?')) return;
+            setDonnees(prev => {
+              const nouveau = {...prev};
+              nouveau[match.j1].matchsJoues--;
+              nouveau[match.j1].pointsMarques -= match.scoreJ1;
+              nouveau[match.j1].pointsEncaisses -= match.scoreJ2;
+              nouveau[match.j1].zonesDangereuses -= match.statsJ1.zonesDangereuses;
+              nouveau[match.j1].smashAnnonces -= match.statsJ1.smashAnnonces;
+              nouveau[match.j1].zonesLibres -= match.statsJ1.zonesLibres;
+              nouveau[match.j1].pointsDoubles -= match.pointsDoublesJ1;
+              if (match.victoireJ1) nouveau[match.j1].matchsGagnes--;
+              nouveau[match.j2].matchsJoues--;
+              nouveau[match.j2].pointsMarques -= match.scoreJ2;
+              nouveau[match.j2].pointsEncaisses -= match.scoreJ1;
+              nouveau[match.j2].zonesDangereuses -= match.statsJ2.zonesDangereuses;
+              nouveau[match.j2].smashAnnonces -= match.statsJ2.smashAnnonces;
+              nouveau[match.j2].zonesLibres -= match.statsJ2.zonesLibres;
+              nouveau[match.j2].pointsDoubles -= match.pointsDoublesJ2;
+              if (!match.victoireJ1) nouveau[match.j2].matchsGagnes--;
+              setMatchsTermines(prev => prev.filter(m => m !== match));
+              setClasses(cl => ({...cl, [config.classe]: nouveau}));
+              sauvegarderDonnees();
+              return nouveau;
+            });
           };
 
           const TerrainBadminton = ({ points, joueurNom }) => {
             const zones = [
-              { id: 1, x: 10, y: 10, w: 35, h: 35 },
-              { id: 2, x: 55, y: 10, w: 35, h: 35 },
-              { id: 3, x: 10, y: 55, w: 35, h: 35 },
-              { id: 4, x: 55, y: 55, w: 35, h: 35 }
+              { id: 1, x: 10, y: 10, w: 80, h: 80, label: 'AV G' },
+              { id: 2, x: 110, y: 10, w: 80, h: 80, label: 'AV D' },
+              { id: 3, x: 10, y: 110, w: 80, h: 80, label: 'AR G' },
+              { id: 4, x: 110, y: 110, w: 80, h: 80, label: 'AR D' }
             ];
-            const countZone = (zoneId) => points.filter(p => p === zoneId).length;
+            const compteurs = {};
+            points.forEach(p => { compteurs[p] = (compteurs[p] || 0) + 1; });
             return (
-              <div className="bg-gradient-to-br from-green-700 to-green-600 rounded-lg p-4 border-4 border-white shadow-lg">
-                <h4 className="text-center font-bold mb-2 text-sm text-white">{joueurNom}</h4>
-                <svg viewBox="0 0 100 100" className="w-full max-w-xs mx-auto bg-green-800 rounded">
-                  <rect x="5" y="5" width="90" height="90" fill="#1a5e1a" stroke="#fff" strokeWidth="2"/>
-                  <line x1="50" y1="5" x2="50" y2="95" stroke="#fff" strokeWidth="1.5"/>
-                  <line x1="5" y1="50" x2="95" y2="50" stroke="#fff" strokeWidth="2"/>
+              <div className="mt-4 p-4 bg-white rounded-xl">
+                <div className="text-sm font-bold text-gray-700 mb-2 text-center">🎯 Carte de frappe - {joueurNom}</div>
+                <svg viewBox="0 0 200 200" className="w-full max-w-xs mx-auto">
+                  <rect x="5" y="5" width="190" height="190" fill="#10b981" stroke="#047857" strokeWidth="2" rx="5"/>
+                  <line x1="100" y1="5" x2="100" y2="195" stroke="#fff" strokeWidth="2" strokeDasharray="5,5"/>
+                  <line x1="5" y1="100" x2="195" y2="100" stroke="#fff" strokeWidth="2" strokeDasharray="5,5"/>
                   {zones.map(zone => {
-                    const count = countZone(zone.id);
+                    const count = compteurs[zone.id] || 0;
                     return (
                       <g key={zone.id}>
                         <rect x={zone.x} y={zone.y} width={zone.w} height={zone.h} fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
@@ -452,7 +542,7 @@
                     <div className="text-center mb-8">
                       <div className="badminton-icon">🏸</div>
                       <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">Badminton Pro</h1>
-                      <p className="text-gray-600 font-medium">v2.1 - Scores corrigés + Icône</p>
+                      <p className="text-gray-600 font-medium">v2.2 - Avec objet Service</p>
                     </div>
                     <div className="mb-6">
                       <label className="block text-sm font-bold text-gray-700 mb-3">📚 Nom de la classe</label>
@@ -533,8 +623,8 @@
                         <div className="grid grid-cols-4 gap-3">
                           {[2, 3, 4, 5].map(nb => (
                             <button key={nb} onClick={() => {
-                              setConfig({...config, nombreJoueurs: nb, joueurs: []});
-                              for (let i = 0; i < nb; i++) setTimeout(() => ajouterJoueur(), i * 50);
+                              const nouveauxJoueurs = Array(nb).fill(null).map(() => ({prenom: '', nom: ''}));
+                              setConfig({...config, nombreJoueurs: nb, joueurs: nouveauxJoueurs});
                             }} className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl shadow-lg">
                               {nb}
                             </button>
@@ -579,7 +669,8 @@
                       {[
                         {val: 'smash', icon: Zap, title: '⚡ Travail du smash annoncé', desc: 'Crier "smash" avant', color: 'purple'},
                         {val: 'zones', icon: Target, title: '🎯 Viser zones dangereuses', desc: 'Zones avant/arrière', color: 'orange'},
-                        {val: 'espaces', icon: MapPin, title: '📍 Viser espaces libres', desc: 'Où l\'adversaire n\'est pas', color: 'green'}
+                        {val: 'espaces', icon: MapPin, title: '📍 Viser espaces libres', desc: 'Où l\'adversaire n\'est pas', color: 'green'},
+                        {val: 'service', icon: Send, title: '🏸 Efficacité du service', desc: 'Marquer le point sur service', color: 'blue'}
                       ].map(({val, icon: Icon, title, desc, color}) => (
                         <button key={val} onClick={() => setConfig({...config, objetEnseignement: val})}
                           className={`w-full p-5 rounded-2xl border-2 transition shadow-md ${
@@ -656,96 +747,49 @@
           }
 
           if (phase === 'selection') {
-            const matchsOrdonnes = genererOrdreMatchs(poule);
             return (
               <div className="min-h-screen p-4">
-                <div className="max-w-4xl mx-auto">
-                  <div className="glass rounded-3xl p-6 mb-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div><h2 className="text-2xl font-bold text-emerald-700">{config.classe}</h2></div>
-                      <div className="text-sm"><span className="text-green-600 font-bold">{matchsTermines.length}</span> / {matchsOrdonnes.length}</div>
-                    </div>
-                    <div className="grid gap-3 mb-6">
-                      {matchsOrdonnes.map((match, index) => {
-                        const [j1, j2] = match;
-                        const estTermine = isMatchTermine(j1, j2);
-                        const matchKey = getMatchKey(j1, j2);
-                        const matchData = matchsTermines.find(m => m.key === matchKey);
+                <div className="max-w-6xl mx-auto">
+                  <div className="glass rounded-3xl p-8 mb-6">
+                    <h1 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                      🏸 {config.classe} - Poule
+                    </h1>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {poule.map((j1, i) => poule.slice(i + 1).map(j2 => {
+                        const termine = isMatchTermine(j1, j2);
                         return (
-                          <div key={index} className={`${estTermine ? 'match-done' : 'match-pending'} text-white p-4 rounded-xl flex items-center justify-between`}>
-                            <div className="flex items-center gap-3">
-                              <div className="bg-white text-gray-800 rounded-full w-8 h-8 flex items-center justify-center font-bold">{index + 1}</div>
-                              <span className="font-bold">{j1.prenom} {j1.nom} vs {j2.prenom} {j2.nom}</span>
-                            </div>
-                            {estTermine ? (
-                              <div className="flex items-center gap-3">
-                                <span className="font-bold">✓ {matchData.scoreJ1}-{matchData.scoreJ2}</span>
-                                <button onClick={() => modifierMatch(matchData)} className="bg-white text-emerald-600 p-2 rounded-lg"><Edit className="w-5 h-5" /></button>
+                          <div key={`${j1.prenom}-${j2.prenom}`}
+                            className={`${termine ? 'match-done' : 'match-pending'} rounded-2xl p-6 text-white cursor-pointer transition-all hover:scale-105`}
+                            onClick={() => !termine && demarrerMatch(j1, j2)}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-xl font-bold">{j1.prenom} {j1.nom}</h3>
+                                <div className="text-sm opacity-90 mt-1">vs</div>
+                                <h3 className="text-xl font-bold mt-1">{j2.prenom} {j2.nom}</h3>
                               </div>
-                            ) : (
-                              <button onClick={() => demarrerMatch(j1, j2)} className="bg-white text-blue-600 px-5 py-2 rounded-lg font-bold">Jouer</button>
-                            )}
+                              <div className="text-4xl">{termine ? '✓' : '▶'}</div>
+                            </div>
                           </div>
                         );
-                      })}
-                    </div>
-
-                    <div className="mb-6">
-                      <h2 className="text-xl font-bold flex items-center gap-2 mb-4"><Trophy className="w-6 h-6 text-yellow-500" />Classement</h2>
-                      <div className="space-y-2">
-                        {Object.values(donnees).sort((a, b) => {
-                          if (b.matchsGagnes !== a.matchsGagnes) return b.matchsGagnes - a.matchsGagnes;
-                          return (b.pointsMarques - b.pointsEncaisses) - (a.pointsMarques - a.pointsEncaisses);
-                        }).map((joueur, index) => {
-                          const diff = joueur.pointsMarques - joueur.pointsEncaisses;
-                          return (
-                            <div key={`${joueur.prenom}_${joueur.nom}`} className="flex justify-between items-center bg-white p-4 rounded-xl border-2 border-gray-200">
-                              <div className="flex items-center gap-4">
-                                <div className={`font-bold text-2xl ${index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : index === 2 ? 'text-amber-600' : 'text-gray-500'}`}>
-                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`}
-                                </div>
-                                <span className="font-bold text-lg">{joueur.prenom} {joueur.nom}</span>
-                              </div>
-                              <div className="flex gap-4 text-sm">
-                                <span className="text-green-600 font-bold">{joueur.matchsGagnes}V</span>
-                                <span className="text-red-600 font-bold">{joueur.matchsJoues - joueur.matchsGagnes}D</span>
-                                <span className={`font-bold ${diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                  ({diff > 0 ? '+' : ''}{diff})
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      }))}
                     </div>
                   </div>
-
-                  <div className="flex gap-3 mb-4">
-                    <button onClick={() => { alert('💾 Séance sauvegardée !'); sauvegarderDonnees(); }}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                      <Save className="w-5 h-5" />Sauvegarder
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <button onClick={() => setPhase('stats')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
+                      <BarChart className="w-6 h-6" />Statistiques
                     </button>
-                    <button onClick={() => { if (confirm('Voir les statistiques ?')) setPhase('stats'); }}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                      <BarChart className="w-5 h-5" />Stats
+                    <button onClick={() => { if (confirm('Retour config ?')) setPhase('classe'); }}
+                      className="bg-gradient-to-r from-gray-600 to-gray-700 text-white py-5 rounded-xl font-bold text-lg">
+                      ← Retour
                     </button>
                   </div>
-
-                  <button onClick={() => {
-                    if (confirm('Nouvelle poule ?')) {
-                      setConfig({ classe: '', nombreJoueurs: 0, joueurs: [], typeMatch: '', mortSubite: false, objetEnseignement: '', pointsDoubles: false });
-                      setPoule([]); setMatchEnCours(null); setDonnees({}); setMatchsTermines([]); setPhase('classe');
-                    }
-                  }} className="w-full bg-gradient-to-r from-red-600 to-pink-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
-                    <RotateCcw className="w-5 h-5" />Nouvelle poule
-                  </button>
                 </div>
 
                 {showEditMatch && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="glass rounded-2xl p-6 max-w-md w-full">
-                      <h3 className="text-xl font-bold mb-4">✏️ Modifier le résultat</h3>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
+                      <h3 className="text-xl font-bold mb-4">✏️ Modifier le match</h3>
+                      <div className="grid grid-cols-2 gap-4 mb-6">
                         <div>
                           <label className="block text-sm font-bold mb-2">Score {donnees[showEditMatch.j1]?.prenom}</label>
                           <input type="number" id="newScoreJ1" defaultValue={showEditMatch.scoreJ1}
@@ -781,7 +825,9 @@
                     <div className="grid md:grid-cols-2 gap-6">
                       {Object.values(donnees).map(joueur => {
                         const tauxVictoire = joueur.matchsJoues > 0 ? (joueur.matchsGagnes / joueur.matchsJoues) * 100 : 0;
-                        const progressionGlobale = joueur.zonesDangereuses + joueur.smashAnnonces + joueur.zonesLibres + joueur.pointsDoubles;
+                        const progressionGlobale = joueur.zonesDangereuses + joueur.smashAnnonces + joueur.zonesLibres + joueur.pointsDoubles + joueur.pointsSurService;
+                        const tauxServiceReussi = (joueur.pointsSurService + joueur.servicesRates) > 0 ? 
+                          (joueur.pointsSurService / (joueur.pointsSurService + joueur.servicesRates) * 100) : 0;
                         return (
                           <div key={`${joueur.prenom}_${joueur.nom}`} className="stat-card rounded-2xl p-6">
                             <h3 className="text-2xl font-bold mb-4 text-emerald-700">{joueur.prenom} {joueur.nom}</h3>
@@ -789,13 +835,56 @@
                               <div className="flex justify-between mb-2"><span>Taux victoire</span><span className="font-bold">{tauxVictoire.toFixed(0)}%</span></div>
                               <div className="w-full bg-gray-200 rounded-full h-4"><div className="bg-gradient-to-r from-yellow-400 to-orange-500 h-4 rounded-full" style={{width: `${tauxVictoire}%`}}></div></div>
                             </div>
-                            <div className="grid grid-cols-5 gap-2 mb-4 text-center">
+                            <div className="grid grid-cols-4 gap-2 mb-4 text-center">
                               <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-green-600">{joueur.matchsGagnes}</div><div className="text-xs">Victoires</div></div>
                               <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-orange-600">{joueur.zonesDangereuses}</div><div className="text-xs">ZD</div></div>
                               <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-purple-600">{joueur.smashAnnonces}</div><div className="text-xs">SA</div></div>
                               <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-teal-600">{joueur.zonesLibres}</div><div className="text-xs">ZL</div></div>
-                              <div className="bg-white p-3 rounded-lg"><div className="text-2xl font-bold text-blue-600">{joueur.pointsDoubles}</div><div className="text-xs">×2</div></div>
                             </div>
+                            <div className="grid grid-cols-2 gap-2 mb-4 text-center">
+                              <div className="bg-white p-3 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-600">{joueur.pointsSurService}</div>
+                                <div className="text-xs">Pts Service</div>
+                              </div>
+                              <div className="bg-white p-3 rounded-lg">
+                                <div className="text-2xl font-bold text-red-600">{joueur.servicesRates}</div>
+                                <div className="text-xs">Srv Ratés</div>
+                              </div>
+                            </div>
+                            {(joueur.pointsSurService + joueur.servicesRates) > 0 && (
+                              <div className="mb-4">
+                                <div className="flex justify-between mb-2 text-sm">
+                                  <span>Efficacité service</span>
+                                  <span className="font-bold">{tauxServiceReussi.toFixed(0)}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-3">
+                                  <div className="bg-gradient-to-r from-blue-400 to-blue-600 h-3 rounded-full" style={{width: `${tauxServiceReussi}%`}}></div>
+                                </div>
+                              </div>
+                            )}
+                            {joueur.servicesRates > 0 && (
+                              <div className="bg-red-50 p-3 rounded-lg mb-4">
+                                <div className="text-xs font-bold text-red-700 mb-2">Détail erreurs service :</div>
+                                <div className="grid grid-cols-4 gap-1 text-xs">
+                                  <div className="text-center">
+                                    <div className="font-bold text-red-600">{joueur.erreursServiceNonTouche || 0}</div>
+                                    <div className="text-gray-600">Non touché</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="font-bold text-red-600">{joueur.erreursServiceRiviere || 0}</div>
+                                    <div className="text-gray-600">Rivière</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="font-bold text-red-600">{joueur.erreursServiceNonCroise || 0}</div>
+                                    <div className="text-gray-600">Non croisé</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="font-bold text-red-600">{joueur.erreursServiceFilet || 0}</div>
+                                    <div className="text-gray-600">Filet</div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                             {joueur.pointsTerrain.length > 0 && <TerrainBadminton points={joueur.pointsTerrain} joueurNom={`${joueur.prenom}`} />}
                           </div>
                         );
@@ -819,6 +908,19 @@
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
                     <Zap className="w-6 h-6" />Smash ({pointsText})
                   </button>
+                );
+              } else if (config.objetEnseignement === 'service') {
+                return (
+                  <div className="space-y-3">
+                    <button onClick={() => ajouterPoint(joueur, 'pointSurService')}
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
+                      <Send className="w-6 h-6" />Point sur service ({pointsText})
+                    </button>
+                    <button onClick={() => setShowServiceErreur(joueur)}
+                      className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2">
+                      ❌ Service raté
+                    </button>
+                  </div>
                 );
               } else {
                 return (
@@ -869,6 +971,12 @@
                           <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ1.smashAnnonces}</div><div>SA</div></div>
                           <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ1.zonesLibres}</div><div>ZL</div></div>
                         </div>
+                        {config.objetEnseignement === 'service' && (
+                          <div className="grid grid-cols-2 gap-3 text-xs mt-3">
+                            <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-blue-600">{matchEnCours.statsJ1.pointsSurService}</div><div>Pts Srv</div></div>
+                            <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-red-600">{matchEnCours.statsJ1.servicesRates}</div><div>Srv ❌</div></div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -884,6 +992,12 @@
                           <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ2.smashAnnonces}</div><div>SA</div></div>
                           <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ2.zonesLibres}</div><div>ZL</div></div>
                         </div>
+                        {config.objetEnseignement === 'service' && (
+                          <div className="grid grid-cols-2 gap-3 text-xs mt-3">
+                            <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-blue-600">{matchEnCours.statsJ2.pointsSurService}</div><div>Pts Srv</div></div>
+                            <div className="text-center p-2 bg-white rounded-lg"><div className="text-2xl font-bold text-red-600">{matchEnCours.statsJ2.servicesRates}</div><div>Srv ❌</div></div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -953,6 +1067,59 @@
                     ✕ Annuler
                   </button>
                 </div>
+
+                {/* PAGE PLEIN ÉCRAN POUR LES ERREURS DE SERVICE */}
+                <div className={`page-service-erreur-fullscreen ${showServiceErreur ? 'active' : ''}`}>
+                  <div style={{color: 'white', textAlign: 'center', fontSize: '28px', fontWeight: 'bold', marginBottom: '30px'}}>
+                    ❌ Type d'erreur de service
+                  </div>
+                  <div style={{flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px'}}>
+                    {[
+                      {type: 'nonTouche', label: 'Non touché', desc: 'Le serveur n\'a pas touché le volant avec la raquette', emoji: '🏸', color: 'linear-gradient(135deg, #dc2626, #991b1b)'},
+                      {type: 'riviere', label: 'Rivière', desc: 'Le volant tombe dans la zone interdite', emoji: '🌊', color: 'linear-gradient(135deg, #ea580c, #c2410c)'},
+                      {type: 'nonCroise', label: 'Non croisé', desc: 'Le volant n\'est pas croisé', emoji: '↗️', color: 'linear-gradient(135deg, #f97316, #ea580c)'},
+                      {type: 'filet', label: 'Filet', desc: 'Le volant ne franchit pas le filet', emoji: '🥅', color: 'linear-gradient(135deg, #fb923c, #f97316)'}
+                    ].map(erreur => (
+                      <button key={erreur.type} onClick={() => {
+                        ajouterServiceRate(showServiceErreur, erreur.type);
+                        setShowServiceErreur(false);
+                      }} style={{
+                        background: erreur.color,
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '20px',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        padding: '25px',
+                        minHeight: '160px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}>
+                        <div style={{fontSize: '50px'}}>{erreur.emoji}</div>
+                        <div style={{fontSize: '20px', fontWeight: 'bold'}}>{erreur.label}</div>
+                        <div style={{fontSize: '13px', opacity: 0.9}}>{erreur.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => setShowServiceErreur(false)} style={{
+                    width: '100%',
+                    background: '#6b7280',
+                    color: 'white',
+                    border: 'none',
+                    padding: '20px',
+                    borderRadius: '15px',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}>
+                    ✕ Annuler
+                  </button>
+                </div>
               </div>
             );
           }
@@ -961,7 +1128,7 @@
         }
 
         ReactDOM.createRoot(document.getElementById('root')).render(<BadmintonTracker />);
-        console.log('✅ Badminton Pro v2.1 chargé - Scores corrigés');
+        console.log('✅ Badminton Pro v2.2 chargé - Avec objet Service');
     </script>
 </body>
 </html>
