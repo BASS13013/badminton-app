@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#047857">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Badminton Pro">
+    <title>Badminton Pro v3.0</title>
+    <link rel="manifest" href="manifest.json">
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23fbbf24'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle'%3E🏸%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%23fbbf24'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle'%3E🏸%3C/text%3E%3C/svg%3E">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            font-family: 'Poppins', system-ui, sans-serif;
+            box-sizing: border-box;
+        }
+        body { 
+            margin: 0;
+            background: linear-gradient(135deg, #0f766e 0%, #047857 50%, #065f46 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .match-done { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            opacity: 0.85; 
+        }
+        .match-pending { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+        }
+        .badminton-icon {
+            width: 120px; height: 120px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 40px rgba(251, 191, 36, 0.4);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        
+        /* Amélioration tablette */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .tablet-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .tablet-text-lg { font-size: 1.25rem !important; }
+            .tablet-p-6 { padding: 1.5rem !important; }
+            .tablet-gap-4 { gap: 1rem !important; }
+        }
+        
+        @media (min-width: 1024px) {
+            .desktop-grid-3 { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+        
+        /* Boutons tactiles optimisés */
+        .touch-btn {
+            min-height: 56px;
+            touch-action: manipulation;
+        }
+        
+        @media (pointer: coarse) {
+            .touch-btn { min-height: 64px; }
+        }
+        
+        /* Pages plein écran */
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+        .fullscreen-overlay.active {
+            display: flex !important;
+        }
+        .page-zones-fullscreen {
+            background: linear-gradient(135deg, #047857, #065f46);
+        }
+        .page-service-erreur-fullscreen {
+            background: linear-gradient(135deg, #dc2626, #991b1b);
+        }
+        
+        /* Animation de chargement */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border-radius: 50%;
+            border: 3px solid currentColor;
+            animation: pulse-ring 1.5s ease-out infinite;
+        }
+        
+        /* Badge "avec la manière" */
+        .badge-maniere {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+        }
+        
+        /* Classement */
+        .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .rank-2 { background: linear-gradient(135deg, #9ca3af, #6b7280); }
+        .rank-3 { background: linear-gradient(135deg, #d97706, #b45309); }
+        
+        /* Tabs */
+        .tab-active {
+            background: linear-gradient(135deg, #047857, #065f46);
+            color: white;
+        }
+        .tab-inactive {
+            background: rgba(255,255,255,0.5);
+            color: #374151;
+        }
+        
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useMemo } = React;
+        
+        console.log('🏸 Badminton Pro v3.0 - Version améliorée');
+
+        // ==================== ICÔNES ====================
+        const Icon = ({d, className = "w-6 h-6"}) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} />
+            </svg>
+        );
+        const Users = ({className}) => <Icon className={className} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />;
+        const Target = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+        const Zap = ({className}) => <Icon className={className} d="M13 10V3L4 14h7v7l9-11h-7z" />;
+        const MapPin = ({className}) => <Icon className={className} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />;
+        const Clock = ({className}) => <svg className={className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>;
+        const Trophy = ({className}) => <Icon className={className} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />;
+        const RotateCcw = ({className}) => <Icon className={className} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />;
+        const ChevronRight = ({className}) => <Icon className={className} d="M9 5l7 7-7 7" />;
+        const ChevronLeft = ({className}) => <Icon className={className} d="M15 19l-7-7 7-7" />;
+        const Trash2 = ({className}) => <Icon className={className} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />;
+        const Edit = ({className}) => <Icon className={className} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />;
+        const Save = ({className}) => <Icon className={className} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />;
+        const BarChart = ({className}) => <Icon className={className} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />;
+        const Send = ({className}) => <Icon className={className} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />;
+        const Download = ({className}) => <Icon className={className} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />;
+        const FileText = ({className}) => <Icon className={className} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />;
+        const Calendar = ({className}) => <Icon className={className} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />;
+        const History = ({className}) => <Icon className={className} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />;
+        const Award = ({className}) => <Icon className={className} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />;
+        const List = ({className}) => <Icon className={className} d="M4 6h16M4 10h16M4 14h16M4 18h16" />;
+        const Grid = ({className}) => <Icon className={className} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />;
+        const Plus = ({className}) => <Icon className={className} d="M12 4v16m8-8H4" />;
+
+        // ==================== COMPOSANT PRINCIPAL ====================
+        function BadmintonTracker() {
+            // États principaux
+            const [config, setConfig] = useState({
+                classe: '', 
+                nombreJoueurs: 0, 
+                joueurs: [], 
+                typeMatch: '', 
+                mortSubite: false, 
+                objetEnseignement: '', 
+                pointsDoubles: false
+            });
+            const [poule, setPoule] = useState([]);
+            const [matchEnCours, setMatchEnCours] = useState(null);
+            const [historiquePoints, setHistoriquePoints] = useState([]);
+            const [timer, setTimer] = useState(180);
+            const [timerActif, setTimerActif] = useState(false);
+            const [phase, setPhase] = useState('classe');
+            const [donnees, setDonnees] = useState({});
+            const [classes, setClasses] = useState({});
+            const [showDeleteModal, setShowDeleteModal] = useState(false);
+            const [showTerrain, setShowTerrain] = useState(false);
+            const [showServiceErreur, setShowServiceErreur] = useState(false);
+            const [matchsTermines, setMatchsTermines] = useState([]);
+            const [showEditMatch, setShowEditMatch] = useState(null);
+            
+            // Nouveaux états pour les fonctionnalités améliorées
+            const [lecons, setLecons] = useState({}); // {classe: {1: {date, donnees, matchs}, 2: {...}}}
+            const [currentLecon, setCurrentLecon] = useState(1);
+            const [showLeconModal, setShowLeconModal] = useState(false);
+            const [showExportModal, setShowExportModal] = useState(false);
+            const [showHistorique, setShowHistorique] = useState(false);
+            const [statsTab, setStatsTab] = useState('classement'); // 'classement', 'details', 'historique'
+            const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+            const [lastSyncTime, setLastSyncTime] = useState(null);
+            const [showSyncStatus, setShowSyncStatus] = useState(false);
+
+            // ==================== PROTECTION CONTRE LA FERMETURE ====================
+            useEffect(() => {
+                const handleBeforeUnload = (e) => {
+                    if (matchEnCours || hasUnsavedChanges) {
+                        e.preventDefault();
+                        e.returnValue = 'Vous avez un match en cours ou des données non sauvegardées. Êtes-vous sûr de vouloir quitter ?';
+                        return e.returnValue;
+                    }
+                };
+                
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, [matchEnCours, hasUnsavedChanges]);
+
+            // ==================== DÉTECTION FIN DE MATCH ====================
+            useEffect(() => {
+                if (matchEnCours && config.typeMatch !== '3min') {
+                    if (matchEnCours.scoreJ1 >= matchEnCours.pointsMax) {
+                        console.log('🏆 J1 gagne avec', matchEnCours.scoreJ1, 'points !');
+                        setTimeout(() => terminerMatch(), 800);
+                    } else if (matchEnCours.scoreJ2 >= matchEnCours.pointsMax) {
+                        console.log('🏆 J2 gagne avec', matchEnCours.scoreJ2, 'points !');
+                        setTimeout(() => terminerMatch(), 800);
+                    }
+                }
+            }, [matchEnCours?.scoreJ1, matchEnCours?.scoreJ2]);
+
+            // ==================== CHARGEMENT DES DONNÉES ====================
+            useEffect(() => {
+                const saved = localStorage.getItem('badmintonDataV3');
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        setClasses(parsed.classes || {});
+                        setLecons(parsed.lecons || {});
+                        setLastSyncTime(parsed.lastSync || null);
+                        console.log('✅ Données chargées');
+                    } catch (err) { 
+                        console.error('Erreur chargement', err); 
+                    }
+                }
+            }, []);
+
+            // ==================== SAUVEGARDE ====================
+            const sauvegarderDonnees = useCallback(() => {
+                try {
+                    const dataToSave = {
+                        classes,
+                        lecons,
+                        lastSync: new Date().toISOString(),
+                        version: '3.0'
+                    };
+                    localStorage.setItem('badmintonDataV3', JSON.stringify(dataToSave));
+                    setLastSyncTime(dataToSave.lastSync);
+                    setHasUnsavedChanges(false);
+                    console.log('✅ Données sauvegardées');
+                } catch (err) { 
+                    console.error('❌ Erreur sauvegarde', err); 
+                }
+            }, [classes, lecons]);
+
+            // Auto-save toutes les 30 secondes si changements
+            useEffect(() => {
+                if (hasUnsavedChanges) {
+                    const timer = setTimeout(sauvegarderDonnees, 30000);
+                    return () => clearTimeout(timer);
+                }
+            }, [hasUnsavedChanges, sauvegarderDonnees]);
+
+            // ==================== TIMER ====================
+            useEffect(() => {
+                if (timerActif && timer > 0) {
+                    const interval = setInterval(() => setTimer(t => t > 0 ? t - 1 : 0), 1000);
+                    return () => clearInterval(interval);
+                } else if (timerActif && timer === 0 && matchEnCours) {
+                    setTimerActif(false);
+                    terminerMatch();
+                }
+            }, [timerActif, timer]);
+
+            const formatTimer = (secondes) => {
+                const mins = Math.floor(secondes / 60);
+                const secs = secondes % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            // ==================== GESTION DES JOUEURS ====================
+            const ajouterJoueur = () => {
+                setConfig({...config, joueurs: [...config.joueurs, {prenom: '', nom: ''}]});
+            };
+
+            const modifierJoueur = (index, champ, valeur) => {
+                const nouveauxJoueurs = [...config.joueurs];
+                nouveauxJoueurs[index][champ] = valeur;
+                setConfig({...config, joueurs: nouveauxJoueurs});
+            };
+
+            const supprimerJoueur = (index) => {
+                if (config.joueurs.length > 2) {
+                    const nouveauxJoueurs = config.joueurs.filter((_, i) => i !== index);
+                    setConfig({...config, joueurs: nouveauxJoueurs, nombreJoueurs: nouveauxJoueurs.length});
+                }
+            };
+
+            // ==================== GESTION DES LEÇONS ====================
+            const creerNouvelleLecon = () => {
+                const classe = config.classe;
+                if (!lecons[classe]) {
+                    lecons[classe] = {};
+                }
+                const numLecons = Object.keys(lecons[classe]).length;
+                const nouvelleLecon = numLecons + 1;
+                lecons[classe][nouvelleLecon] = {
+                    date: new Date().toISOString(),
+                    donnees: {},
+                    matchs: [],
+                    objetEnseignement: config.objetEnseignement,
+                    typeMatch: config.typeMatch
+                };
+                setLecons({...lecons});
+                setCurrentLecon(nouvelleLecon);
+                setHasUnsavedChanges(true);
+            };
+
+            const changerLecon = (numLecon) => {
+                setCurrentLecon(numLecon);
+                const leconData = lecons[config.classe]?.[numLecon];
+                if (leconData) {
+                    setDonnees(leconData.donnees || {});
+                    setMatchsTermines(leconData.matchs || []);
+                }
+                setShowLeconModal(false);
+            };
+
+            // ==================== DÉMARRAGE POULE ====================
+            const demarrerPoule = () => {
+                const nouvelleDonnees = {};
+                config.joueurs.forEach(j => {
+                    const key = `${j.prenom}_${j.nom}`;
+                    nouvelleDonnees[key] = {
+                        nom: j.nom, 
+                        prenom: j.prenom,
+                        // Stats générales
+                        matchsJoues: 0, 
+                        matchsGagnes: 0,
+                        pointsMarques: 0, 
+                        pointsEncaisses: 0,
+                        // Stats par objet d'enseignement
+                        zonesDangereuses: 0,
+                        zonesNormales: 0,
+                        smashAnnonces: 0,
+                        zonesLibres: 0,
+                        pointsSurService: 0,
+                        servicesRates: 0,
+                        // Erreurs de service détaillées
+                        erreursServiceNonTouche: 0,
+                        erreursServiceRiviere: 0,
+                        erreursServiceNonCroise: 0,
+                        erreursServiceFilet: 0,
+                        // Autres
+                        pointsDoubles: 0,
+                        defaitesMortSubite: 0,
+                        victoires: [],
+                        defaites: [],
+                        pointsTerrain: [],
+                        // Stats "avec la manière"
+                        victoiresAvecManiere: 0,
+                        defaitesAvecManiere: 0
+                    };
+                });
+                
+                setDonnees(nouvelleDonnees);
+                setPoule(config.joueurs);
+                setMatchsTermines([]);
+                
+                // Créer ou mettre à jour la leçon
+                if (!lecons[config.classe]) {
+                    lecons[config.classe] = {};
+                }
+                if (!lecons[config.classe][currentLecon]) {
+                    lecons[config.classe][currentLecon] = {
+                        date: new Date().toISOString(),
+                        donnees: nouvelleDonnees,
+                        matchs: [],
+                        objetEnseignement: config.objetEnseignement,
+                        typeMatch: config.typeMatch
+                    };
+                }
+                
+                setLecons({...lecons});
+                setClasses(prev => ({...prev, [config.classe]: nouvelleDonnees}));
+                setHasUnsavedChanges(true);
+                setPhase('selection');
+            };
+
+            // ==================== GESTION DES MATCHS ====================
+            const getMatchKey = (j1, j2) => {
+                const key1 = `${j1.prenom}_${j1.nom}`;
+                const key2 = `${j2.prenom}_${j2.nom}`;
+                return [key1, key2].sort().join('-vs-');
+            };
+
+            const isMatchTermine = (j1, j2) => {
+                const key = getMatchKey(j1, j2);
+                return matchsTermines.some(m => m.key === key);
+            };
+
+            const demarrerMatch = (j1, j2) => {
+                if (isMatchTermine(j1, j2)) {
+                    alert('Ce match a déjà été joué.');
+                    return;
+                }
+                const pointsMax = config.typeMatch === '11pts' ? 11 : config.typeMatch === '15pts' ? 15 : 999;
+                
+                setMatchEnCours({
+                    joueur1: `${j1.prenom}_${j1.nom}`,
+                    joueur2: `${j2.prenom}_${j2.nom}`,
+                    prenomJ1: j1.prenom,
+                    nomJ1: j1.nom,
+                    prenomJ2: j2.prenom,
+                    nomJ2: j2.nom,
+                    scoreJ1: 0,
+                    scoreJ2: 0,
+                    pointsDoublesJ1: 0,
+                    pointsDoublesJ2: 0,
+                    pointsNormauxJ1: 0,
+                    pointsNormauxJ2: 0,
+                    statsJ1: {
+                        zonesDangereuses: 0,
+                        zonesNormales: 0,
+                        smashAnnonces: 0,
+                        zonesLibres: 0,
+                        pointsSurService: 0,
+                        servicesRates: 0
+                    },
+                    statsJ2: {
+                        zonesDangereuses: 0,
+                        zonesNormales: 0,
+                        smashAnnonces: 0,
+                        zonesLibres: 0,
+                        pointsSurService: 0,
+                        servicesRates: 0
+                    },
+                    erreursServiceJ1: { nonTouche: 0, riviere: 0, nonCroise: 0, filet: 0 },
+                    erreursServiceJ2: { nonTouche: 0, riviere: 0, nonCroise: 0, filet: 0 },
+                    terrainJ1: [],
+                    terrainJ2: [],
+                    pointsMax,
+                    changementCote: Math.floor(pointsMax / 2),
+                    coteChange: false,
+                    dateDebut: new Date().toISOString()
+                });
+                
+                setHistoriquePoints([]);
+                if (config.typeMatch === '3min') {
+                    setTimer(180);
+                    setTimerActif(true);
+                }
+                setPhase('jeu');
+            };
+
+            // ==================== AJOUT DE POINTS ====================
+            const ajouterPointAvecZone = (joueur, type, zone) => {
+                setMatchEnCours(prev => {
+                    const nouveau = {...prev};
+                    const isDouble = type !== 'normal';
+                    
+                    setHistoriquePoints(hist => [...hist, {
+                        joueur,
+                        type,
+                        zone,
+                        etat: JSON.parse(JSON.stringify(prev))
+                    }]);
+
+                    if (joueur === 'j1') {
+                        nouveau.scoreJ1++;
+                        if (isDouble && config.pointsDoubles) nouveau.scoreJ1++;
+                        if (isDouble) {
+                            nouveau.pointsDoublesJ1++;
+                        } else {
+                            nouveau.pointsNormauxJ1++;
+                        }
+                        
+                        if (type === 'zoneDangereuse') nouveau.statsJ1.zonesDangereuses++;
+                        else if (type === 'smashAnnonce') nouveau.statsJ1.smashAnnonces++;
+                        else if (type === 'zoneLibre') nouveau.statsJ1.zonesLibres++;
+                        else if (type === 'pointSurService') nouveau.statsJ1.pointsSurService++;
+                        else if (type === 'normal') nouveau.statsJ1.zonesNormales++;
+                        
+                        if (zone) nouveau.terrainJ1.push(zone);
+                    } else {
+                        nouveau.scoreJ2++;
+                        if (isDouble && config.pointsDoubles) nouveau.scoreJ2++;
+                        if (isDouble) {
+                            nouveau.pointsDoublesJ2++;
+                        } else {
+                            nouveau.pointsNormauxJ2++;
+                        }
+                        
+                        if (type === 'zoneDangereuse') nouveau.statsJ2.zonesDangereuses++;
+                        else if (type === 'smashAnnonce') nouveau.statsJ2.smashAnnonces++;
+                        else if (type === 'zoneLibre') nouveau.statsJ2.zonesLibres++;
+                        else if (type === 'pointSurService') nouveau.statsJ2.pointsSurService++;
+                        else if (type === 'normal') nouveau.statsJ2.zonesNormales++;
+                        
+                        if (zone) nouveau.terrainJ2.push(zone);
+                    }
+
+                    // Vérification mort subite
+                    if (config.mortSubite) {
+                        if (nouveau.pointsDoublesJ2 >= 3) {
+                            setTimeout(() => terminerMatch(true, 'j1'), 100);
+                            return nouveau;
+                        }
+                        if (nouveau.pointsDoublesJ1 >= 3) {
+                            setTimeout(() => terminerMatch(true, 'j2'), 100);
+                            return nouveau;
+                        }
+                    }
+
+                    // Changement de côté
+                    if (!nouveau.coteChange && config.typeMatch !== '3min') {
+                        const total = nouveau.scoreJ1 + nouveau.scoreJ2;
+                        if (total >= nouveau.changementCote) {
+                            nouveau.coteChange = true;
+                            setTimeout(() => alert('🔄 Changement de côté !'), 100);
+                        }
+                    }
+
+                    return nouveau;
+                });
+            };
+
+            const ajouterServiceRate = (joueurServeur, typeErreur) => {
+                setMatchEnCours(prev => {
+                    const nouveau = {...prev};
+                    const joueurAdversaire = joueurServeur === 'j1' ? 'j2' : 'j1';
+                    
+                    setHistoriquePoints(hist => [...hist, {
+                        joueur: joueurAdversaire,
+                        type: 'serviceRate',
+                        typeErreur,
+                        joueurServeur,
+                        etat: JSON.parse(JSON.stringify(prev))
+                    }]);
+
+                    if (joueurAdversaire === 'j1') {
+                        nouveau.scoreJ1++;
+                        nouveau.pointsNormauxJ1++;
+                    } else {
+                        nouveau.scoreJ2++;
+                        nouveau.pointsNormauxJ2++;
+                    }
+
+                    if (joueurServeur === 'j1') {
+                        nouveau.statsJ1.servicesRates++;
+                        if (typeErreur === 'nonTouche') nouveau.erreursServiceJ1.nonTouche++;
+                        else if (typeErreur === 'riviere') nouveau.erreursServiceJ1.riviere++;
+                        else if (typeErreur === 'nonCroise') nouveau.erreursServiceJ1.nonCroise++;
+                        else if (typeErreur === 'filet') nouveau.erreursServiceJ1.filet++;
+                    } else {
+                        nouveau.statsJ2.servicesRates++;
+                        if (typeErreur === 'nonTouche') nouveau.erreursServiceJ2.nonTouche++;
+                        else if (typeErreur === 'riviere') nouveau.erreursServiceJ2.riviere++;
+                        else if (typeErreur === 'nonCroise') nouveau.erreursServiceJ2.nonCroise++;
+                        else if (typeErreur === 'filet') nouveau.erreursServiceJ2.filet++;
+                    }
+
+                    // Changement de côté
+                    if (!nouveau.coteChange && config.typeMatch !== '3min') {
+                        const total = nouveau.scoreJ1 + nouveau.scoreJ2;
+                        if (total >= nouveau.changementCote) {
+                            nouveau.coteChange = true;
+                            setTimeout(() => alert('🔄 Changement de côté !'), 100);
+                        }
+                    }
+
+                    return nouveau;
+                });
+            };
+
+            const ajouterPoint = (joueur, type) => ajouterPointAvecZone(joueur, type, null);
+
+            const annulerDernierPoint = () => {
+                if (historiquePoints.length === 0) {
+                    alert('Aucun point à annuler');
+                    return;
+                }
+                const dernierPoint = historiquePoints[historiquePoints.length - 1];
+                setMatchEnCours(dernierPoint.etat);
+                setHistoriquePoints(hist => hist.slice(0, -1));
+            };
+
+            // ==================== CALCUL "AVEC LA MANIÈRE" ====================
+            const calculerAvecManiere = (statsJoueur, objetEnseignement) => {
+                if (objetEnseignement === 'zones') {
+                    return statsJoueur.zonesDangereuses > statsJoueur.zonesNormales;
+                } else if (objetEnseignement === 'espaces') {
+                    return statsJoueur.zonesLibres > statsJoueur.zonesNormales;
+                } else if (objetEnseignement === 'smash') {
+                    return statsJoueur.smashAnnonces > 0;
+                } else if (objetEnseignement === 'service') {
+                    return statsJoueur.pointsSurService > statsJoueur.servicesRates;
+                }
+                return false;
+            };
+
+            const getIndiceReussite = (bonus, victoire, avecManiere) => {
+                if (!victoire) {
+                    if (avecManiere) return { texte: 'Défaite avec la manière', couleur: 'text-orange-600', icon: '🎯', badge: true };
+                    return { texte: 'Défaite', couleur: 'text-gray-600', icon: '❌', badge: false };
+                }
+                if (avecManiere) {
+                    if (bonus >= 4) return { texte: 'Excellent avec la manière !', couleur: 'text-purple-600', icon: '🏆', badge: true };
+                    if (bonus >= 3) return { texte: 'Très bien avec la manière !', couleur: 'text-green-600', icon: '⭐', badge: true };
+                    return { texte: 'Victoire avec la manière !', couleur: 'text-yellow-600', icon: '🎯', badge: true };
+                }
+                if (bonus >= 4) return { texte: 'Excellent', couleur: 'text-purple-600', icon: '🏆', badge: false };
+                if (bonus >= 3) return { texte: 'Très bien', couleur: 'text-green-600', icon: '⭐', badge: false };
+                if (bonus >= 2) return { texte: 'Bien', couleur: 'text-blue-600', icon: '✓', badge: false };
+                if (bonus >= 1) return { texte: 'Assez bien', couleur: 'text-yellow-600', icon: '○', badge: false };
+                return { texte: 'Victoire simple', couleur: 'text-gray-600', icon: '•', badge: false };
+            };
+
+            // ==================== TERMINER MATCH ====================
+            const terminerMatch = (mortSubite = false, gagnant = null) => {
+                if (!matchEnCours) return;
+                
+                const {
+                    joueur1, joueur2, prenomJ1, nomJ1, prenomJ2, nomJ2,
+                    scoreJ1, scoreJ2, statsJ1, statsJ2,
+                    pointsDoublesJ1, pointsDoublesJ2, pointsNormauxJ1, pointsNormauxJ2,
+                    terrainJ1, terrainJ2, erreursServiceJ1, erreursServiceJ2, dateDebut
+                } = matchEnCours;
+                
+                const victoireJ1 = mortSubite ? gagnant === 'j1' : scoreJ1 > scoreJ2;
+                const victoireJ2 = mortSubite ? gagnant === 'j2' : scoreJ2 > scoreJ1;
+                
+                // Calculer "avec la manière"
+                const avecManiereJ1 = calculerAvecManiere(statsJ1, config.objetEnseignement);
+                const avecManiereJ2 = calculerAvecManiere(statsJ2, config.objetEnseignement);
+
+                const matchKey = getMatchKey({prenom: prenomJ1, nom: nomJ1}, {prenom: prenomJ2, nom: nomJ2});
+                const matchData = {
+                    key: matchKey,
+                    j1: joueur1,
+                    j2: joueur2,
+                    prenomJ1, nomJ1, prenomJ2, nomJ2,
+                    scoreJ1,
+                    scoreJ2,
+                    statsJ1: {...statsJ1},
+                    statsJ2: {...statsJ2},
+                    erreursServiceJ1: {...erreursServiceJ1},
+                    erreursServiceJ2: {...erreursServiceJ2},
+                    pointsDoublesJ1,
+                    pointsDoublesJ2,
+                    pointsNormauxJ1,
+                    pointsNormauxJ2,
+                    terrainJ1: [...terrainJ1],
+                    terrainJ2: [...terrainJ2],
+                    victoireJ1,
+                    avecManiereJ1,
+                    avecManiereJ2,
+                    mortSubite,
+                    objetEnseignement: config.objetEnseignement,
+                    typeMatch: config.typeMatch,
+                    dateDebut,
+                    dateFin: new Date().toISOString()
+                };
+
+                setMatchsTermines(prev => [...prev, matchData]);
+
+                // Mise à jour des données
+                setDonnees(prev => {
+                    const nouveau = {...prev};
+                    
+                    // Joueur 1
+                    nouveau[joueur1].matchsJoues++;
+                    nouveau[joueur1].pointsMarques += scoreJ1;
+                    nouveau[joueur1].pointsEncaisses += scoreJ2;
+                    nouveau[joueur1].zonesDangereuses += statsJ1.zonesDangereuses;
+                    nouveau[joueur1].zonesNormales += statsJ1.zonesNormales;
+                    nouveau[joueur1].smashAnnonces += statsJ1.smashAnnonces;
+                    nouveau[joueur1].zonesLibres += statsJ1.zonesLibres;
+                    nouveau[joueur1].pointsSurService += statsJ1.pointsSurService;
+                    nouveau[joueur1].servicesRates += statsJ1.servicesRates;
+                    nouveau[joueur1].erreursServiceNonTouche += erreursServiceJ1.nonTouche;
+                    nouveau[joueur1].erreursServiceRiviere += erreursServiceJ1.riviere;
+                    nouveau[joueur1].erreursServiceNonCroise += erreursServiceJ1.nonCroise;
+                    nouveau[joueur1].erreursServiceFilet += erreursServiceJ1.filet;
+                    nouveau[joueur1].pointsDoubles += pointsDoublesJ1;
+                    nouveau[joueur1].pointsTerrain.push(...terrainJ1);
+                    
+                    if (victoireJ1) {
+                        nouveau[joueur1].matchsGagnes++;
+                        if (avecManiereJ1) nouveau[joueur1].victoiresAvecManiere++;
+                        nouveau[joueur1].victoires.push({
+                            adversaire: `${prenomJ2} ${nomJ2}`,
+                            score: `${scoreJ1}-${scoreJ2}`,
+                            bonus: pointsDoublesJ1,
+                            avecManiere: avecManiereJ1,
+                            indice: getIndiceReussite(pointsDoublesJ1, true, avecManiereJ1),
+                            date: new Date().toISOString()
+                        });
+                    } else {
+                        if (avecManiereJ1) nouveau[joueur1].defaitesAvecManiere++;
+                        nouveau[joueur1].defaites.push({
+                            adversaire: `${prenomJ2} ${nomJ2}`,
+                            score: `${scoreJ1}-${scoreJ2}`,
+                            avecManiere: avecManiereJ1,
+                            date: new Date().toISOString()
+                        });
+                        if (mortSubite) nouveau[joueur1].defaitesMortSubite++;
+                    }
+
+                    // Joueur 2
+                    nouveau[joueur2].matchsJoues++;
+                    nouveau[joueur2].pointsMarques += scoreJ2;
+                    nouveau[joueur2].pointsEncaisses += scoreJ1;
+                    nouveau[joueur2].zonesDangereuses += statsJ2.zonesDangereuses;
+                    nouveau[joueur2].zonesNormales += statsJ2.zonesNormales;
+                    nouveau[joueur2].smashAnnonces += statsJ2.smashAnnonces;
+                    nouveau[joueur2].zonesLibres += statsJ2.zonesLibres;
+                    nouveau[joueur2].pointsSurService += statsJ2.pointsSurService;
+                    nouveau[joueur2].servicesRates += statsJ2.servicesRates;
+                    nouveau[joueur2].erreursServiceNonTouche += erreursServiceJ2.nonTouche;
+                    nouveau[joueur2].erreursServiceRiviere += erreursServiceJ2.riviere;
+                    nouveau[joueur2].erreursServiceNonCroise += erreursServiceJ2.nonCroise;
+                    nouveau[joueur2].erreursServiceFilet += erreursServiceJ2.filet;
+                    nouveau[joueur2].pointsDoubles += pointsDoublesJ2;
+                    nouveau[joueur2].pointsTerrain.push(...terrainJ2);
+                    
+                    if (victoireJ2) {
+                        nouveau[joueur2].matchsGagnes++;
+                        if (avecManiereJ2) nouveau[joueur2].victoiresAvecManiere++;
+                        nouveau[joueur2].victoires.push({
+                            adversaire: `${prenomJ1} ${nomJ1}`,
+                            score: `${scoreJ2}-${scoreJ1}`,
+                            bonus: pointsDoublesJ2,
+                            avecManiere: avecManiereJ2,
+                            indice: getIndiceReussite(pointsDoublesJ2, true, avecManiereJ2),
+                            date: new Date().toISOString()
+                        });
+                    } else {
+                        if (avecManiereJ2) nouveau[joueur2].defaitesAvecManiere++;
+                        nouveau[joueur2].defaites.push({
+                            adversaire: `${prenomJ1} ${nomJ1}`,
+                            score: `${scoreJ2}-${scoreJ1}`,
+                            avecManiere: avecManiereJ2,
+                            date: new Date().toISOString()
+                        });
+                        if (mortSubite) nouveau[joueur2].defaitesMortSubite++;
+                    }
+
+                    return nouveau;
+                });
+
+                // Mise à jour leçon
+                if (lecons[config.classe]?.[currentLecon]) {
+                    lecons[config.classe][currentLecon].matchs = [...matchsTermines, matchData];
+                    setLecons({...lecons});
+                }
+
+                setClasses(prev => ({...prev, [config.classe]: donnees}));
+                setTimerActif(false);
+                setMatchEnCours(null);
+                setHistoriquePoints([]);
+                setHasUnsavedChanges(true);
+                setPhase('selection');
+                sauvegarderDonnees();
+            };
+
+            // ==================== CLASSEMENT ====================
+            const getClassement = useMemo(() => {
+                const joueurs = Object.entries(donnees).map(([key, j]) => ({
+                    key,
+                    ...j,
+                    diffPoints: j.pointsMarques - j.pointsEncaisses,
+                    tauxVictoire: j.matchsJoues > 0 ? Math.round((j.matchsGagnes / j.matchsJoues) * 100) : 0
+                }));
+
+                return joueurs.sort((a, b) => {
+                    if (b.matchsGagnes !== a.matchsGagnes) return b.matchsGagnes - a.matchsGagnes;
+                    if (b.diffPoints !== a.diffPoints) return b.diffPoints - a.diffPoints;
+                    return b.pointsMarques - a.pointsMarques;
+                });
+            }, [donnees]);
+
+            // ==================== EXPORT PDF ====================
+            const exporterPDF = () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Titre
+                doc.setFontSize(20);
+                doc.setTextColor(4, 120, 87);
+                doc.text(`Badminton - ${config.classe}`, 105, 20, { align: 'center' });
+                
+                // Sous-titre
+                doc.setFontSize(12);
+                doc.setTextColor(100);
+                const leconInfo = lecons[config.classe]?.[currentLecon];
+                const dateStr = leconInfo ? new Date(leconInfo.date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
+                doc.text(`Leçon ${currentLecon} - ${dateStr}`, 105, 30, { align: 'center' });
+                doc.text(`Objet d'enseignement: ${getObjetLabel(config.objetEnseignement)}`, 105, 38, { align: 'center' });
+                
+                // Classement
+                doc.setFontSize(14);
+                doc.setTextColor(0);
+                doc.text('Classement', 20, 55);
+                
+                let y = 65;
+                doc.setFontSize(10);
+                getClassement.forEach((j, index) => {
+                    const rank = index + 1;
+                    const avecManiereText = j.victoiresAvecManiere > 0 ? ` (${j.victoiresAvecManiere} avec la manière)` : '';
+                    doc.text(`${rank}. ${j.prenom} ${j.nom} - ${j.matchsGagnes}V/${j.matchsJoues}M - ${j.pointsMarques}pts${avecManiereText}`, 20, y);
+                    y += 8;
+                });
+                
+                // Matchs
+                y += 10;
+                doc.setFontSize(14);
+                doc.text('Historique des matchs', 20, y);
+                y += 10;
+                
+                doc.setFontSize(9);
+                matchsTermines.forEach(m => {
+                    const gagnant = m.victoireJ1 ? m.prenomJ1 : m.prenomJ2;
+                    const maniere = (m.victoireJ1 && m.avecManiereJ1) || (!m.victoireJ1 && m.avecManiereJ2) ? ' ★' : '';
+                    doc.text(`${m.prenomJ1} ${m.scoreJ1} - ${m.scoreJ2} ${m.prenomJ2} (Vainqueur: ${gagnant}${maniere})`, 20, y);
+                    y += 6;
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                });
+                
+                // Stats détaillées
+                doc.addPage();
+                doc.setFontSize(14);
+                doc.text('Statistiques détaillées', 20, 20);
+                
+                y = 35;
+                doc.setFontSize(9);
+                getClassement.forEach(j => {
+                    doc.setFontSize(11);
+                    doc.text(`${j.prenom} ${j.nom}`, 20, y);
+                    y += 7;
+                    doc.setFontSize(9);
+                    
+                    const stats = getStatsParObjet(j, config.objetEnseignement);
+                    stats.forEach(stat => {
+                        doc.text(`  ${stat.label}: ${stat.value}`, 20, y);
+                        y += 5;
+                    });
+                    
+                    y += 5;
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                });
+                
+                doc.save(`badminton_${config.classe}_lecon${currentLecon}.pdf`);
+            };
+
+            // ==================== EXPORT EXCEL ====================
+            const exporterExcel = () => {
+                const wb = XLSX.utils.book_new();
+                
+                // Feuille Classement
+                const classementData = getClassement.map((j, index) => ({
+                    'Rang': index + 1,
+                    'Prénom': j.prenom,
+                    'Nom': j.nom,
+                    'Matchs joués': j.matchsJoues,
+                    'Victoires': j.matchsGagnes,
+                    'Défaites': j.matchsJoues - j.matchsGagnes,
+                    'Points marqués': j.pointsMarques,
+                    'Points encaissés': j.pointsEncaisses,
+                    'Différence': j.diffPoints,
+                    'Taux victoire (%)': j.tauxVictoire,
+                    'Victoires avec la manière': j.victoiresAvecManiere,
+                    'Défaites avec la manière': j.defaitesAvecManiere
+                }));
+                const wsClassement = XLSX.utils.json_to_sheet(classementData);
+                XLSX.utils.book_append_sheet(wb, wsClassement, 'Classement');
+                
+                // Feuille Matchs
+                const matchsData = matchsTermines.map(m => ({
+                    'Joueur 1': `${m.prenomJ1} ${m.nomJ1}`,
+                    'Score J1': m.scoreJ1,
+                    'Joueur 2': `${m.prenomJ2} ${m.nomJ2}`,
+                    'Score J2': m.scoreJ2,
+                    'Vainqueur': m.victoireJ1 ? `${m.prenomJ1} ${m.nomJ1}` : `${m.prenomJ2} ${m.nomJ2}`,
+                    'Avec la manière': (m.victoireJ1 && m.avecManiereJ1) || (!m.victoireJ1 && m.avecManiereJ2) ? 'Oui' : 'Non',
+                    'Mort subite': m.mortSubite ? 'Oui' : 'Non',
+                    'Date': new Date(m.dateFin).toLocaleString('fr-FR')
+                }));
+                const wsMatchs = XLSX.utils.json_to_sheet(matchsData);
+                XLSX.utils.book_append_sheet(wb, wsMatchs, 'Matchs');
+                
+                // Feuille Stats détaillées
+                const statsData = getClassement.map(j => {
+                    const base = {
+                        'Prénom': j.prenom,
+                        'Nom': j.nom
+                    };
+                    
+                    if (config.objetEnseignement === 'zones') {
+                        return {
+                            ...base,
+                            'Zones dangereuses': j.zonesDangereuses,
+                            'Zones normales': j.zonesNormales,
+                            'Ratio ZD/ZN': j.zonesNormales > 0 ? (j.zonesDangereuses / j.zonesNormales).toFixed(2) : j.zonesDangereuses
+                        };
+                    } else if (config.objetEnseignement === 'smash') {
+                        return {
+                            ...base,
+                            'Smash annoncés': j.smashAnnonces,
+                            'Points totaux': j.pointsMarques
+                        };
+                    } else if (config.objetEnseignement === 'espaces') {
+                        return {
+                            ...base,
+                            'Zones libres': j.zonesLibres,
+                            'Points normaux': j.zonesNormales
+                        };
+                    } else if (config.objetEnseignement === 'service') {
+                        return {
+                            ...base,
+                            'Points sur service': j.pointsSurService,
+                            'Services ratés': j.servicesRates,
+                            'Erreurs - Non touché': j.erreursServiceNonTouche,
+                            'Erreurs - Rivière': j.erreursServiceRiviere,
+                            'Erreurs - Non croisé': j.erreursServiceNonCroise,
+                            'Erreurs - Filet': j.erreursServiceFilet,
+                            'Efficacité (%)': (j.pointsSurService + j.servicesRates) > 0 
+                                ? Math.round((j.pointsSurService / (j.pointsSurService + j.servicesRates)) * 100) 
+                                : 0
+                        };
+                    }
+                    return base;
+                });
+                const wsStats = XLSX.utils.json_to_sheet(statsData);
+                XLSX.utils.book_append_sheet(wb, wsStats, 'Stats détaillées');
+                
+                XLSX.writeFile(wb, `badminton_${config.classe}_lecon${currentLecon}.xlsx`);
+            };
+
+            // ==================== HELPERS ====================
+            const getObjetLabel = (objet) => {
+                const labels = {
+                    'zones': 'Zones dangereuses',
+                    'smash': 'Smash annoncé',
+                    'espaces': 'Espaces libres',
+                    'service': 'Efficacité du service'
+                };
+                return labels[objet] || objet;
+            };
+
+            const getStatsParObjet = (joueur, objet) => {
+                const stats = [
+                    { label: 'Matchs joués', value: joueur.matchsJoues },
+                    { label: 'Victoires', value: joueur.matchsGagnes },
+                    { label: 'Points marqués', value: joueur.pointsMarques }
+                ];
+                
+                if (objet === 'zones') {
+                    stats.push(
+                        { label: 'Zones dangereuses', value: joueur.zonesDangereuses },
+                        { label: 'Zones normales', value: joueur.zonesNormales },
+                        { label: 'Victoires avec la manière', value: joueur.victoiresAvecManiere }
+                    );
+                } else if (objet === 'smash') {
+                    stats.push(
+                        { label: 'Smash annoncés', value: joueur.smashAnnonces }
+                    );
+                } else if (objet === 'espaces') {
+                    stats.push(
+                        { label: 'Zones libres', value: joueur.zonesLibres }
+                    );
+                } else if (objet === 'service') {
+                    stats.push(
+                        { label: 'Points sur service', value: joueur.pointsSurService },
+                        { label: 'Services ratés', value: joueur.servicesRates },
+                        { label: 'Efficacité', value: `${(joueur.pointsSurService + joueur.servicesRates) > 0 
+                            ? Math.round((joueur.pointsSurService / (joueur.pointsSurService + joueur.servicesRates)) * 100) 
+                            : 0}%` }
+                    );
+                }
+                
+                return stats;
+            };
+
+            // ==================== COMPOSANT TERRAIN ====================
+            const TerrainBadminton = ({ points, joueurNom }) => {
+                const zones = [
+                    { id: 1, x: 10, y: 10, w: 80, h: 80, label: 'AV G' },
+                    { id: 2, x: 110, y: 10, w: 80, h: 80, label: 'AV D' },
+                    { id: 3, x: 10, y: 110, w: 80, h: 80, label: 'AR G' },
+                    { id: 4, x: 110, y: 110, w: 80, h: 80, label: 'AR D' }
+                ];
+                const compteurs = {};
+                points.forEach(p => { compteurs[p] = (compteurs[p] || 0) + 1; });
+                
+                return (
+                    <div className="mt-4 p-4 bg-white rounded-xl">
+                        <div className="text-sm font-bold text-gray-700 mb-2 text-center">🎯 Carte de frappe - {joueurNom}</div>
+                        <svg viewBox="0 0 200 200" className="w-full max-w-xs mx-auto">
+                            <rect x="5" y="5" width="190" height="190" fill="#10b981" stroke="#047857" strokeWidth="2" rx="5"/>
+                            <line x1="100" y1="5" x2="100" y2="195" stroke="#fff" strokeWidth="2" strokeDasharray="5,5"/>
+                            <line x1="5" y1="100" x2="195" y2="100" stroke="#fff" strokeWidth="2" strokeDasharray="5,5"/>
+                            {zones.map(zone => {
+                                const count = compteurs[zone.id] || 0;
+                                return (
+                                    <g key={zone.id}>
+                                        <rect x={zone.x} y={zone.y} width={zone.w} height={zone.h} 
+                                            fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5"/>
+                                        {count > 0 && (
+                                            <>
+                                                <circle cx={zone.x + zone.w/2} cy={zone.y + zone.h/2} r="14" 
+                                                    fill="#FFD700" stroke="#FFA500" strokeWidth="2"/>
+                                                <text x={zone.x + zone.w/2} y={zone.y + zone.h/2 + 5} 
+                                                    textAnchor="middle" fontSize="12" fontWeight="bold" fill="#000">
+                                                    {count}
+                                                </text>
+                                            </>
+                                        )}
+                                    </g>
+                                );
+                            })}
+                        </svg>
+                    </div>
+                );
+            };
+
+            // ==================== RENDU PAGE CLASSE ====================
+            if (phase === 'classe') {
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="glass rounded-3xl shadow-2xl p-8">
+                                <div className="badminton-icon">🏸</div>
+                                <h1 className="text-4xl font-extrabold text-center mb-2 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                    Badminton Pro
+                                </h1>
+                                <p className="text-center text-gray-600 mb-8 font-medium">v3.0 - Recueil de données EPS</p>
+                                
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Nom de la classe</label>
+                                    <input
+                                        type="text"
+                                        value={config.classe}
+                                        onChange={(e) => setConfig({...config, classe: e.target.value.toUpperCase()})}
+                                        className="w-full px-4 py-4 border-2 border-emerald-300 rounded-xl text-lg focus:border-emerald-500 focus:outline-none"
+                                        placeholder="Ex: 2CAP1"
+                                    />
+                                </div>
+
+                                {Object.keys(classes).length > 0 && (
+                                    <div className="mb-6">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label className="text-sm font-bold text-gray-700">Classes existantes</label>
+                                            <button onClick={() => setShowDeleteModal(true)} className="text-red-600 text-sm flex items-center gap-1">
+                                                <Trash2 className="w-4 h-4" /> Gérer
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {Object.keys(classes).map(cls => (
+                                                <button key={cls} onClick={() => {
+                                                    setConfig({...config, classe: cls});
+                                                    if (lecons[cls]) {
+                                                        const numLecons = Object.keys(lecons[cls]).length;
+                                                        setCurrentLecon(numLecons);
+                                                    }
+                                                }}
+                                                    className="p-3 bg-emerald-50 rounded-xl text-left hover:bg-emerald-100 transition border-2 border-transparent hover:border-emerald-300">
+                                                    <span className="font-bold text-emerald-700">{cls}</span>
+                                                    <span className="text-sm text-gray-600 ml-2">
+                                                        ({Object.keys(classes[cls]).length} élèves)
+                                                    </span>
+                                                    {lecons[cls] && (
+                                                        <div className="text-xs text-gray-500 mt-1">
+                                                            {Object.keys(lecons[cls]).length} leçon(s)
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={() => setPhase('config')}
+                                    disabled={!config.classe.trim()}
+                                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold text-lg disabled:from-gray-300 disabled:to-gray-400 touch-btn"
+                                >
+                                    Continuer →
+                                </button>
+
+                                {lastSyncTime && (
+                                    <div className="mt-4 text-center text-xs text-gray-500">
+                                        Dernière sauvegarde: {new Date(lastSyncTime).toLocaleString('fr-FR')}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal suppression */}
+                        {showDeleteModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="glass rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-auto">
+                                    <h3 className="text-xl font-bold mb-4">🗑️ Gérer les classes</h3>
+                                    <div className="space-y-2 mb-6">
+                                        {Object.keys(classes).map(cls => (
+                                            <div key={cls} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                                <div>
+                                                    <span className="font-medium">{cls}</span>
+                                                    <span className="text-sm text-gray-500 ml-2">
+                                                        ({Object.keys(classes[cls]).length} élèves)
+                                                    </span>
+                                                </div>
+                                                <button onClick={() => {
+                                                    if (confirm(`Supprimer "${cls}" et toutes ses données ?`)) {
+                                                        const updatedClasses = {...classes};
+                                                        delete updatedClasses[cls];
+                                                        const updatedLecons = {...lecons};
+                                                        delete updatedLecons[cls];
+                                                        setClasses(updatedClasses);
+                                                        setLecons(updatedLecons);
+                                                        sauvegarderDonnees();
+                                                    }
+                                                }} className="text-red-600 p-2 hover:bg-red-50 rounded">
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setShowDeleteModal(false)} 
+                                        className="w-full bg-gray-600 text-white py-3 rounded-lg font-bold">
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // ==================== RENDU PAGE CONFIG ====================
+            if (phase === 'config') {
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="glass rounded-3xl shadow-2xl p-8">
+                                <div className="text-center mb-8">
+                                    <Users className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
+                                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{config.classe}</h1>
+                                    <p className="text-gray-600 font-medium">Configuration de la poule</p>
+                                </div>
+
+                                {/* Gestion des leçons */}
+                                {lecons[config.classe] && Object.keys(lecons[config.classe]).length > 0 && (
+                                    <div className="mb-6 p-4 bg-emerald-50 rounded-xl">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="font-bold text-emerald-800">
+                                                <Calendar className="w-5 h-5 inline mr-2" />
+                                                Leçon actuelle: {currentLecon}
+                                            </span>
+                                            <button onClick={() => setShowLeconModal(true)}
+                                                className="text-emerald-600 text-sm font-medium">
+                                                Changer / Nouvelle
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {config.nombreJoueurs === 0 ? (
+                                    <div>
+                                        <p className="text-center font-bold mb-6 text-lg">Combien d'élèves dans la poule ?</p>
+                                        <div className="grid grid-cols-4 gap-3 mb-4">
+                                            {[2, 3, 4, 5].map(nb => (
+                                                <button key={nb} onClick={() => {
+                                                    const nouveauxJoueurs = Array(nb).fill(null).map(() => ({prenom: '', nom: ''}));
+                                                    setConfig({...config, nombreJoueurs: nb, joueurs: nouveauxJoueurs});
+                                                }}
+                                                    className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white py-8 rounded-2xl font-bold text-3xl shadow-lg touch-btn">
+                                                    {nb}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button onClick={() => setPhase('classe')}
+                                            className="w-full bg-gray-500 text-white py-4 rounded-xl font-bold touch-btn">
+                                            ← Retour
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <div className="space-y-3 mb-6">
+                                            {config.joueurs.map((joueur, index) => (
+                                                <div key={index} className="flex gap-2 items-center">
+                                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+                                                        {index + 1}
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        value={joueur.prenom}
+                                                        onChange={(e) => modifierJoueur(index, 'prenom', e.target.value)}
+                                                        className="flex-1 px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none"
+                                                        placeholder="Prénom"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        value={joueur.nom}
+                                                        onChange={(e) => modifierJoueur(index, 'nom', e.target.value)}
+                                                        className="flex-1 px-4 py-3 border-2 border-emerald-300 rounded-xl focus:border-emerald-500 focus:outline-none"
+                                                        placeholder="Nom"
+                                                    />
+                                                    {config.joueurs.length > 2 && (
+                                                        <button onClick={() => supprimerJoueur(index)}
+                                                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
+                                                            <Trash2 className="w-5 h-5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        
+                                        {config.joueurs.length < 6 && (
+                                            <button onClick={ajouterJoueur}
+                                                className="w-full mb-4 py-3 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-600 font-medium flex items-center justify-center gap-2 hover:bg-emerald-50">
+                                                <Plus className="w-5 h-5" /> Ajouter un élève
+                                            </button>
+                                        )}
+
+                                        <div className="flex gap-3">
+                                            <button onClick={() => setConfig({...config, nombreJoueurs: 0, joueurs: []})}
+                                                className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold touch-btn">
+                                                ← Retour
+                                            </button>
+                                            <button
+                                                onClick={() => setPhase('objetEnseignement')}
+                                                disabled={config.joueurs.some(j => !j.nom.trim() || !j.prenom.trim())}
+                                                className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300 disabled:to-gray-400 touch-btn"
+                                            >
+                                                Suivant →
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Modal leçons */}
+                        {showLeconModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="glass rounded-2xl p-6 max-w-md w-full">
+                                    <h3 className="text-xl font-bold mb-4">📚 Gestion des leçons</h3>
+                                    
+                                    <div className="space-y-2 mb-6 max-h-60 overflow-auto">
+                                        {Object.keys(lecons[config.classe] || {}).map(num => {
+                                            const lecon = lecons[config.classe][num];
+                                            return (
+                                                <button key={num}
+                                                    onClick={() => changerLecon(parseInt(num))}
+                                                    className={`w-full p-3 rounded-lg text-left transition ${
+                                                        currentLecon === parseInt(num)
+                                                            ? 'bg-emerald-100 border-2 border-emerald-500'
+                                                            : 'bg-gray-50 hover:bg-gray-100'
+                                                    }`}
+                                                >
+                                                    <div className="font-bold">Leçon {num}</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        {new Date(lecon.date).toLocaleDateString('fr-FR')} - {lecon.matchs?.length || 0} matchs
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <button onClick={() => {
+                                        creerNouvelleLecon();
+                                        setShowLeconModal(false);
+                                    }}
+                                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-bold mb-3 flex items-center justify-center gap-2">
+                                        <Plus className="w-5 h-5" /> Nouvelle leçon
+                                    </button>
+                                    
+                                    <button onClick={() => setShowLeconModal(false)}
+                                        className="w-full bg-gray-500 text-white py-3 rounded-lg font-bold">
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // ==================== RENDU PAGE OBJET ENSEIGNEMENT ====================
+            if (phase === 'objetEnseignement') {
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="glass rounded-3xl shadow-2xl p-8">
+                                <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                    🎯 Objet d'enseignement
+                                </h2>
+                                
+                                <div className="space-y-3 mb-6">
+                                    {[
+                                        {val: 'smash', icon: Zap, title: '⚡ Travail du smash annoncé', desc: 'Crier "smash" avant de frapper', color: 'purple'},
+                                        {val: 'zones', icon: Target, title: '🎯 Viser zones dangereuses', desc: 'Zones avant/arrière du terrain', color: 'orange'},
+                                        {val: 'espaces', icon: MapPin, title: '📍 Viser espaces libres', desc: 'Là où l\'adversaire n\'est pas', color: 'green'},
+                                        {val: 'service', icon: Send, title: '🏸 Efficacité du service', desc: 'Marquer le point sur son service', color: 'blue'}
+                                    ].map(({val, icon: IconComp, title, desc, color}) => (
+                                        <button key={val}
+                                            onClick={() => setConfig({...config, objetEnseignement: val})}
+                                            className={`w-full p-5 rounded-2xl border-2 transition shadow-md touch-btn ${
+                                                config.objetEnseignement === val
+                                                    ? `border-${color}-600 bg-gradient-to-r from-${color}-50 to-${color}-100`
+                                                    : 'border-gray-300 bg-white hover:border-gray-400'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <IconComp className={`w-8 h-8 text-${color}-600`} />
+                                                <div className="text-left">
+                                                    <div className="font-bold text-lg">{title}</div>
+                                                    <div className="text-sm text-gray-600">{desc}</div>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button onClick={() => setPhase('config')}
+                                        className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold touch-btn">
+                                        ← Retour
+                                    </button>
+                                    <button
+                                        onClick={() => setPhase('typeMatch')}
+                                        disabled={!config.objetEnseignement}
+                                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300 disabled:to-gray-400 touch-btn"
+                                    >
+                                        Suivant →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==================== RENDU PAGE TYPE MATCH ====================
+            if (phase === 'typeMatch') {
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="glass rounded-3xl shadow-2xl p-8">
+                                <h2 className="text-3xl font-bold text-center mb-6">⚙️ Configuration du match</h2>
+                                
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-gray-700 mb-3">Type de match</h3>
+                                    <div className="space-y-3">
+                                        {[
+                                            {value: '3min', icon: Clock, title: 'Match en 3 minutes', desc: 'Temps limité'},
+                                            {value: '11pts', icon: Target, title: 'Match en 11 points', desc: 'Premier à 11'},
+                                            {value: '15pts', icon: Target, title: 'Match en 15 points', desc: 'Premier à 15'}
+                                        ].map(({value, icon: IconComp, title, desc}) => (
+                                            <button key={value}
+                                                onClick={() => setConfig({...config, typeMatch: value})}
+                                                className={`w-full p-4 rounded-xl border-2 transition touch-btn ${
+                                                    config.typeMatch === value
+                                                        ? 'border-emerald-600 bg-gradient-to-r from-emerald-50 to-teal-50'
+                                                        : 'border-gray-300 bg-white hover:border-gray-400'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <IconComp className="w-7 h-7 text-emerald-600" />
+                                                    <div className="text-left">
+                                                        <div className="font-bold">{title}</div>
+                                                        <div className="text-sm text-gray-500">{desc}</div>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-gray-700 mb-3">Options</h3>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer hover:bg-blue-50 border-gray-300 touch-btn">
+                                            <input
+                                                type="checkbox"
+                                                checked={config.pointsDoubles}
+                                                onChange={(e) => setConfig({...config, pointsDoubles: e.target.checked})}
+                                                className="w-5 h-5 text-blue-600 rounded"
+                                            />
+                                            <div className="ml-3">
+                                                <div className="font-bold">🏆 Points doubles</div>
+                                                <div className="text-sm text-gray-500">Les actions spéciales valent 2 points</div>
+                                            </div>
+                                        </label>
+                                        <label className="flex items-center p-4 rounded-xl border-2 cursor-pointer hover:bg-red-50 border-gray-300 touch-btn">
+                                            <input
+                                                type="checkbox"
+                                                checked={config.mortSubite}
+                                                onChange={(e) => setConfig({...config, mortSubite: e.target.checked})}
+                                                className="w-5 h-5 text-red-600 rounded"
+                                            />
+                                            <div className="ml-3">
+                                                <div className="font-bold">⚠️ Mort subite</div>
+                                                <div className="text-sm text-gray-500">3 points bonus adverses = défaite</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button onClick={() => setPhase('objetEnseignement')}
+                                        className="flex-1 bg-gray-500 text-white py-4 rounded-xl font-bold touch-btn">
+                                        ← Retour
+                                    </button>
+                                    <button
+                                        onClick={demarrerPoule}
+                                        disabled={!config.typeMatch}
+                                        className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-xl font-bold disabled:from-gray-300 disabled:to-gray-400 touch-btn"
+                                    >
+                                        🚀 Démarrer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==================== RENDU PAGE SELECTION ====================
+            if (phase === 'selection') {
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="glass rounded-3xl p-6 md:p-8 mb-6">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                                    <div>
+                                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                                            🏸 {config.classe}
+                                        </h1>
+                                        <p className="text-gray-600 mt-1">
+                                            Leçon {currentLecon} • {getObjetLabel(config.objetEnseignement)} • {matchsTermines.length}/{poule.length * (poule.length - 1) / 2} matchs
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2 mt-4 md:mt-0">
+                                        <button onClick={() => setShowExportModal(true)}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium flex items-center gap-2">
+                                            <Download className="w-4 h-4" /> Export
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Grille des matchs */}
+                                <div className="grid md:grid-cols-2 gap-4 tablet-grid tablet-gap-4">
+                                    {poule.map((j1, i) => poule.slice(i + 1).map(j2 => {
+                                        const termine = isMatchTermine(j1, j2);
+                                        const matchData = matchsTermines.find(m => m.key === getMatchKey(j1, j2));
+                                        
+                                        return (
+                                            <div key={`${j1.prenom}-${j2.prenom}`}
+                                                className={`${termine ? 'match-done' : 'match-pending'} rounded-2xl p-5 text-white cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98]`}
+                                                onClick={() => !termine && demarrerMatch(j1, j2)}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex-1">
+                                                        <h3 className="text-lg font-bold">{j1.prenom} {j1.nom}</h3>
+                                                        {termine && matchData && (
+                                                            <div className="text-2xl font-extrabold my-1">
+                                                                {matchData.scoreJ1} - {matchData.scoreJ2}
+                                                            </div>
+                                                        )}
+                                                        {!termine && <div className="text-sm opacity-90 my-1">vs</div>}
+                                                        <h3 className="text-lg font-bold">{j2.prenom} {j2.nom}</h3>
+                                                        
+                                                        {termine && matchData && (matchData.avecManiereJ1 || matchData.avecManiereJ2) && (
+                                                            <div className="mt-2">
+                                                                <span className="badge-maniere">
+                                                                    🎯 Avec la manière
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-4xl">{termine ? '✓' : '▶'}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    }))}
+                                </div>
+                            </div>
+
+                            {/* Boutons actions */}
+                            <div className="grid md:grid-cols-3 gap-4 tablet-grid">
+                                <button onClick={() => setPhase('stats')}
+                                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 touch-btn">
+                                    <BarChart className="w-6 h-6" /> Statistiques
+                                </button>
+                                <button onClick={() => setShowHistorique(true)}
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 touch-btn">
+                                    <History className="w-6 h-6" /> Historique
+                                </button>
+                                <button onClick={() => {
+                                    if (confirm('Retourner à la configuration ?')) {
+                                        sauvegarderDonnees();
+                                        setPhase('classe');
+                                    }
+                                }}
+                                    className="bg-gradient-to-r from-gray-600 to-gray-700 text-white py-5 rounded-xl font-bold text-lg touch-btn">
+                                    ← Retour
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Export */}
+                        {showExportModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="glass rounded-2xl p-6 max-w-md w-full">
+                                    <h3 className="text-xl font-bold mb-4">📥 Exporter les données</h3>
+                                    <div className="space-y-3 mb-6">
+                                        <button onClick={() => { exporterPDF(); setShowExportModal(false); }}
+                                            className="w-full p-4 bg-red-50 hover:bg-red-100 rounded-xl flex items-center gap-4 transition">
+                                            <div className="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center text-white text-2xl">
+                                                📄
+                                            </div>
+                                            <div className="text-left">
+                                                <div className="font-bold">Export PDF</div>
+                                                <div className="text-sm text-gray-600">Classement et statistiques</div>
+                                            </div>
+                                        </button>
+                                        <button onClick={() => { exporterExcel(); setShowExportModal(false); }}
+                                            className="w-full p-4 bg-green-50 hover:bg-green-100 rounded-xl flex items-center gap-4 transition">
+                                            <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center text-white text-2xl">
+                                                📊
+                                            </div>
+                                            <div className="text-left">
+                                                <div className="font-bold">Export Excel</div>
+                                                <div className="text-sm text-gray-600">Données complètes en tableur</div>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <button onClick={() => setShowExportModal(false)}
+                                        className="w-full bg-gray-600 text-white py-3 rounded-lg font-bold">
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal Historique */}
+                        {showHistorique && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="glass rounded-2xl p-6 max-w-2xl w-full max-h-[85vh] overflow-auto">
+                                    <h3 className="text-xl font-bold mb-4">📜 Historique des matchs</h3>
+                                    
+                                    {matchsTermines.length === 0 ? (
+                                        <p className="text-center text-gray-500 py-8">Aucun match terminé</p>
+                                    ) : (
+                                        <div className="space-y-3 mb-6">
+                                            {matchsTermines.map((match, idx) => (
+                                                <div key={idx} className="p-4 bg-gray-50 rounded-xl">
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className={`font-bold ${match.victoireJ1 ? 'text-emerald-600' : ''}`}>
+                                                                    {match.prenomJ1} {match.nomJ1}
+                                                                </span>
+                                                                <span className="text-2xl font-extrabold">
+                                                                    {match.scoreJ1} - {match.scoreJ2}
+                                                                </span>
+                                                                <span className={`font-bold ${!match.victoireJ1 ? 'text-emerald-600' : ''}`}>
+                                                                    {match.prenomJ2} {match.nomJ2}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <div className="text-sm text-gray-600">
+                                                                {match.mortSubite && <span className="text-red-600 mr-2">⚠️ Mort subite</span>}
+                                                                {new Date(match.dateFin).toLocaleString('fr-FR')}
+                                                            </div>
+
+                                                            {/* Détails stats selon objet */}
+                                                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                                {config.objetEnseignement === 'zones' && (
+                                                                    <>
+                                                                        <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded">
+                                                                            ZD: {match.statsJ1.zonesDangereuses}/{match.statsJ2.zonesDangereuses}
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                                {config.objetEnseignement === 'service' && (
+                                                                    <>
+                                                                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                                                                            Pts/Srv: {match.statsJ1.pointsSurService}/{match.statsJ2.pointsSurService}
+                                                                        </span>
+                                                                        <span className="px-2 py-1 bg-red-100 text-red-700 rounded">
+                                                                            Ratés: {match.statsJ1.servicesRates}/{match.statsJ2.servicesRates}
+                                                                        </span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+
+                                                            {(match.avecManiereJ1 || match.avecManiereJ2) && (
+                                                                <div className="mt-2">
+                                                                    {match.avecManiereJ1 && (
+                                                                        <span className="badge-maniere mr-2">
+                                                                            🎯 {match.prenomJ1} avec la manière
+                                                                        </span>
+                                                                    )}
+                                                                    {match.avecManiereJ2 && (
+                                                                        <span className="badge-maniere">
+                                                                            🎯 {match.prenomJ2} avec la manière
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    
+                                    <button onClick={() => setShowHistorique(false)}
+                                        className="w-full bg-gray-600 text-white py-3 rounded-lg font-bold">
+                                        Fermer
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            // ==================== RENDU PAGE STATS ====================
+            if (phase === 'stats') {
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="glass rounded-3xl p-6 md:p-8 mb-6">
+                                <h1 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                    📊 Statistiques - {config.classe}
+                                </h1>
+
+                                {/* Tabs */}
+                                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+                                    {[
+                                        {key: 'classement', label: '🏆 Classement', icon: Trophy},
+                                        {key: 'details', label: '📈 Détails', icon: BarChart}
+                                    ].map(tab => (
+                                        <button key={tab.key}
+                                            onClick={() => setStatsTab(tab.key)}
+                                            className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition ${
+                                                statsTab === tab.key ? 'tab-active' : 'tab-inactive'
+                                            }`}
+                                        >
+                                            {tab.label}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Contenu Classement */}
+                                {statsTab === 'classement' && (
+                                    <div className="space-y-3">
+                                        {getClassement.map((joueur, index) => {
+                                            const rang = index + 1;
+                                            let rankClass = 'bg-gray-100';
+                                            let medal = '';
+                                            if (rang === 1) { rankClass = 'rank-1 text-black'; medal = '🥇'; }
+                                            else if (rang === 2) { rankClass = 'rank-2 text-white'; medal = '🥈'; }
+                                            else if (rang === 3) { rankClass = 'rank-3 text-white'; medal = '🥉'; }
+
+                                            return (
+                                                <div key={joueur.key}
+                                                    className={`p-4 rounded-xl ${rankClass} ${rang > 3 ? 'border-2 border-gray-200' : ''}`}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
+                                                                rang <= 3 ? 'bg-white/30' : 'bg-white'
+                                                            }`}>
+                                                                {medal || rang}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-lg">{joueur.prenom} {joueur.nom}</div>
+                                                                <div className={`text-sm ${rang <= 3 && rang > 1 ? 'text-white/80' : 'text-gray-600'}`}>
+                                                                    {joueur.matchsGagnes}V / {joueur.matchsJoues}M • {joueur.tauxVictoire}%
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="font-bold text-xl">
+                                                                {joueur.pointsMarques} pts
+                                                            </div>
+                                                            <div className={`text-sm ${joueur.diffPoints >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                                {joueur.diffPoints >= 0 ? '+' : ''}{joueur.diffPoints}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {(joueur.victoiresAvecManiere > 0 || joueur.defaitesAvecManiere > 0) && (
+                                                        <div className="mt-3 flex flex-wrap gap-2">
+                                                            {joueur.victoiresAvecManiere > 0 && (
+                                                                <span className="badge-maniere">
+                                                                    🎯 {joueur.victoiresAvecManiere} victoire(s) avec la manière
+                                                                </span>
+                                                            )}
+                                                            {joueur.defaitesAvecManiere > 0 && (
+                                                                <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
+                                                                    🎯 {joueur.defaitesAvecManiere} défaite(s) avec la manière
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Contenu Détails */}
+                                {statsTab === 'details' && (
+                                    <div className="grid md:grid-cols-2 gap-4 tablet-grid">
+                                        {getClassement.map(joueur => (
+                                            <div key={joueur.key} className="p-4 bg-white rounded-xl border-2 border-gray-200">
+                                                <h3 className="font-bold text-lg mb-3 text-emerald-700">
+                                                    {joueur.prenom} {joueur.nom}
+                                                </h3>
+                                                
+                                                {/* Stats générales */}
+                                                <div className="grid grid-cols-3 gap-2 mb-4">
+                                                    <div className="text-center p-2 bg-emerald-50 rounded-lg">
+                                                        <div className="text-2xl font-bold text-emerald-600">{joueur.matchsGagnes}</div>
+                                                        <div className="text-xs text-gray-600">Victoires</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-blue-50 rounded-lg">
+                                                        <div className="text-2xl font-bold text-blue-600">{joueur.pointsMarques}</div>
+                                                        <div className="text-xs text-gray-600">Points</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-purple-50 rounded-lg">
+                                                        <div className="text-2xl font-bold text-purple-600">{joueur.tauxVictoire}%</div>
+                                                        <div className="text-xs text-gray-600">Réussite</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Stats spécifiques à l'objet */}
+                                                {config.objetEnseignement === 'zones' && (
+                                                    <div className="grid grid-cols-2 gap-2 mb-3">
+                                                        <div className="text-center p-2 bg-orange-50 rounded-lg">
+                                                            <div className="text-xl font-bold text-orange-600">{joueur.zonesDangereuses}</div>
+                                                            <div className="text-xs text-gray-600">Zones dangereuses</div>
+                                                        </div>
+                                                        <div className="text-center p-2 bg-gray-50 rounded-lg">
+                                                            <div className="text-xl font-bold text-gray-600">{joueur.zonesNormales}</div>
+                                                            <div className="text-xs text-gray-600">Points normaux</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {config.objetEnseignement === 'smash' && (
+                                                    <div className="text-center p-2 bg-purple-50 rounded-lg mb-3">
+                                                        <div className="text-xl font-bold text-purple-600">{joueur.smashAnnonces}</div>
+                                                        <div className="text-xs text-gray-600">Smash annoncés</div>
+                                                    </div>
+                                                )}
+
+                                                {config.objetEnseignement === 'espaces' && (
+                                                    <div className="text-center p-2 bg-green-50 rounded-lg mb-3">
+                                                        <div className="text-xl font-bold text-green-600">{joueur.zonesLibres}</div>
+                                                        <div className="text-xs text-gray-600">Zones libres touchées</div>
+                                                    </div>
+                                                )}
+
+                                                {config.objetEnseignement === 'service' && (
+                                                    <div>
+                                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                                            <div className="text-center p-2 bg-blue-50 rounded-lg">
+                                                                <div className="text-xl font-bold text-blue-600">{joueur.pointsSurService}</div>
+                                                                <div className="text-xs text-gray-600">Pts sur service</div>
+                                                            </div>
+                                                            <div className="text-center p-2 bg-red-50 rounded-lg">
+                                                                <div className="text-xl font-bold text-red-600">{joueur.servicesRates}</div>
+                                                                <div className="text-xs text-gray-600">Services ratés</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 mt-2">
+                                                            Erreurs: Non touché ({joueur.erreursServiceNonTouche}) • 
+                                                            Rivière ({joueur.erreursServiceRiviere}) • 
+                                                            Non croisé ({joueur.erreursServiceNonCroise}) • 
+                                                            Filet ({joueur.erreursServiceFilet})
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Carte terrain si zones */}
+                                                {(config.objetEnseignement === 'zones' || config.objetEnseignement === 'espaces') && 
+                                                    joueur.pointsTerrain.length > 0 && (
+                                                    <TerrainBadminton points={joueur.pointsTerrain} joueurNom={joueur.prenom} />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => setPhase('selection')}
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-4 rounded-xl font-bold touch-btn">
+                                ← Retour aux matchs
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==================== RENDU PAGE JEU ====================
+            if (phase === 'jeu' && matchEnCours) {
+                const getButtonForObjet = (joueur) => {
+                    const pointsText = config.pointsDoubles ? '+2' : '+1';
+                    
+                    if (config.objetEnseignement === 'smash') {
+                        return (
+                            <button onClick={() => ajouterPoint(joueur, 'smashAnnonce')}
+                                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 touch-btn">
+                                <Zap className="w-6 h-6" /> Smash annoncé ({pointsText})
+                            </button>
+                        );
+                    } else if (config.objetEnseignement === 'service') {
+                        return (
+                            <div className="space-y-3">
+                                <button onClick={() => ajouterPoint(joueur, 'pointSurService')}
+                                    className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 touch-btn">
+                                    <Send className="w-6 h-6" /> Point sur service ({pointsText})
+                                </button>
+                                <button onClick={() => setShowServiceErreur(joueur)}
+                                    className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 touch-btn">
+                                    ❌ Service raté
+                                </button>
+                            </div>
+                        );
+                    } else {
+                        return (
+                            <button onClick={() => setShowTerrain(joueur)}
+                                className={`w-full ${
+                                    config.objetEnseignement === 'zones' 
+                                        ? 'bg-gradient-to-r from-orange-500 to-red-500' 
+                                        : 'bg-gradient-to-r from-green-500 to-teal-500'
+                                } text-white py-5 rounded-xl font-bold text-lg flex items-center justify-center gap-2 touch-btn`}
+                            >
+                                {config.objetEnseignement === 'zones' ? <Target className="w-6 h-6" /> : <MapPin className="w-6 h-6" />}
+                                {config.objetEnseignement === 'zones' ? 'Zone dangereuse' : 'Zone libre'} ({pointsText})
+                            </button>
+                        );
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen p-4">
+                        <div className="max-w-6xl mx-auto">
+                            {/* Timer */}
+                            {config.typeMatch === '3min' && (
+                                <div className="glass rounded-2xl p-4 mb-6 text-center">
+                                    <div className={`inline-block px-8 py-3 rounded-full font-bold text-3xl relative ${
+                                        timer <= 30 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'
+                                    } ${timer <= 30 ? 'pulse-ring' : ''}`}>
+                                        ⏱️ {formatTimer(timer)}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Score */}
+                            <div className="glass rounded-3xl p-6 md:p-8 mb-6">
+                                <div className="grid grid-cols-3 gap-4 md:gap-6 items-center">
+                                    <div className="text-center">
+                                        <h3 className="text-xl md:text-2xl font-bold mb-2 text-blue-600">
+                                            {matchEnCours.prenomJ1}
+                                        </h3>
+                                        <div className="text-5xl md:text-7xl font-extrabold text-blue-600">
+                                            {matchEnCours.scoreJ1}
+                                        </div>
+                                    </div>
+                                    <div className="text-center text-4xl md:text-5xl font-extrabold text-gray-400">VS</div>
+                                    <div className="text-center">
+                                        <h3 className="text-xl md:text-2xl font-bold mb-2 text-red-600">
+                                            {matchEnCours.prenomJ2}
+                                        </h3>
+                                        <div className="text-5xl md:text-7xl font-extrabold text-red-600">
+                                            {matchEnCours.scoreJ2}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Boutons joueurs */}
+                            <div className="grid md:grid-cols-2 gap-6 mb-6">
+                                {/* Joueur 1 */}
+                                <div className="glass rounded-2xl p-5">
+                                    <h3 className="text-xl font-bold text-blue-600 mb-4">{matchEnCours.prenomJ1}</h3>
+                                    <div className="space-y-3">
+                                        <button onClick={() => ajouterPoint('j1', 'normal')}
+                                            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-5 rounded-xl font-bold text-lg touch-btn">
+                                            Point normal (+1)
+                                        </button>
+                                        {getButtonForObjet('j1')}
+                                    </div>
+                                    
+                                    {/* Mini stats */}
+                                    <div className="mt-4 p-3 bg-blue-50 rounded-xl">
+                                        <div className="grid grid-cols-3 gap-2 text-xs">
+                                            {config.objetEnseignement === 'zones' && (
+                                                <>
+                                                    <div className="text-center p-2 bg-white rounded-lg">
+                                                        <div className="text-xl font-bold text-orange-600">{matchEnCours.statsJ1.zonesDangereuses}</div>
+                                                        <div>ZD</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg">
+                                                        <div className="text-xl font-bold text-gray-600">{matchEnCours.statsJ1.zonesNormales}</div>
+                                                        <div>Normal</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg">
+                                                        <div className="text-xl font-bold text-emerald-600">
+                                                            {matchEnCours.statsJ1.zonesDangereuses > matchEnCours.statsJ1.zonesNormales ? '✓' : '-'}
+                                                        </div>
+                                                        <div>Manière</div>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {config.objetEnseignement === 'smash' && (
+                                                <div className="text-center p-2 bg-white rounded-lg col-span-3">
+                                                    <div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ1.smashAnnonces}</div>
+                                                    <div>Smash annoncés</div>
+                                                </div>
+                                            )}
+                                            {config.objetEnseignement === 'espaces' && (
+                                                <div className="text-center p-2 bg-white rounded-lg col-span-3">
+                                                    <div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ1.zonesLibres}</div>
+                                                    <div>Zones libres</div>
+                                                </div>
+                                            )}
+                                            {config.objetEnseignement === 'service' && (
+                                                <>
+                                                    <div className="text-center p-2 bg-white rounded-lg col-span-1">
+                                                        <div className="text-xl font-bold text-blue-600">{matchEnCours.statsJ1.pointsSurService}</div>
+                                                        <div>Pts Srv</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg col-span-1">
+                                                        <div className="text-xl font-bold text-red-600">{matchEnCours.statsJ1.servicesRates}</div>
+                                                        <div>Ratés</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg col-span-1">
+                                                        <div className="text-xl font-bold text-emerald-600">
+                                                            {matchEnCours.statsJ1.pointsSurService > matchEnCours.statsJ1.servicesRates ? '✓' : '-'}
+                                                        </div>
+                                                        <div>Manière</div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Joueur 2 */}
+                                <div className="glass rounded-2xl p-5">
+                                    <h3 className="text-xl font-bold text-red-600 mb-4">{matchEnCours.prenomJ2}</h3>
+                                    <div className="space-y-3">
+                                        <button onClick={() => ajouterPoint('j2', 'normal')}
+                                            className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-5 rounded-xl font-bold text-lg touch-btn">
+                                            Point normal (+1)
+                                        </button>
+                                        {getButtonForObjet('j2')}
+                                    </div>
+                                    
+                                    {/* Mini stats */}
+                                    <div className="mt-4 p-3 bg-red-50 rounded-xl">
+                                        <div className="grid grid-cols-3 gap-2 text-xs">
+                                            {config.objetEnseignement === 'zones' && (
+                                                <>
+                                                    <div className="text-center p-2 bg-white rounded-lg">
+                                                        <div className="text-xl font-bold text-orange-600">{matchEnCours.statsJ2.zonesDangereuses}</div>
+                                                        <div>ZD</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg">
+                                                        <div className="text-xl font-bold text-gray-600">{matchEnCours.statsJ2.zonesNormales}</div>
+                                                        <div>Normal</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg">
+                                                        <div className="text-xl font-bold text-emerald-600">
+                                                            {matchEnCours.statsJ2.zonesDangereuses > matchEnCours.statsJ2.zonesNormales ? '✓' : '-'}
+                                                        </div>
+                                                        <div>Manière</div>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {config.objetEnseignement === 'smash' && (
+                                                <div className="text-center p-2 bg-white rounded-lg col-span-3">
+                                                    <div className="text-2xl font-bold text-purple-600">{matchEnCours.statsJ2.smashAnnonces}</div>
+                                                    <div>Smash annoncés</div>
+                                                </div>
+                                            )}
+                                            {config.objetEnseignement === 'espaces' && (
+                                                <div className="text-center p-2 bg-white rounded-lg col-span-3">
+                                                    <div className="text-2xl font-bold text-green-600">{matchEnCours.statsJ2.zonesLibres}</div>
+                                                    <div>Zones libres</div>
+                                                </div>
+                                            )}
+                                            {config.objetEnseignement === 'service' && (
+                                                <>
+                                                    <div className="text-center p-2 bg-white rounded-lg col-span-1">
+                                                        <div className="text-xl font-bold text-blue-600">{matchEnCours.statsJ2.pointsSurService}</div>
+                                                        <div>Pts Srv</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg col-span-1">
+                                                        <div className="text-xl font-bold text-red-600">{matchEnCours.statsJ2.servicesRates}</div>
+                                                        <div>Ratés</div>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-white rounded-lg col-span-1">
+                                                        <div className="text-xl font-bold text-emerald-600">
+                                                            {matchEnCours.statsJ2.pointsSurService > matchEnCours.statsJ2.servicesRates ? '✓' : '-'}
+                                                        </div>
+                                                        <div>Manière</div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                <button onClick={() => { if (confirm('Terminer ce match ?')) terminerMatch(); }}
+                                    className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-5 rounded-xl font-bold text-lg touch-btn">
+                                    ✓ Terminer le match
+                                </button>
+                                <button onClick={annulerDernierPoint} disabled={historiquePoints.length === 0}
+                                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-5 rounded-xl font-bold text-lg disabled:from-gray-300 disabled:to-gray-400 flex items-center justify-center gap-2 touch-btn">
+                                    <RotateCcw className="w-5 h-5" /> Annuler ({historiquePoints.length})
+                                </button>
+                            </div>
+
+                            <button onClick={() => {
+                                if (confirm('Annuler ce match et revenir à la sélection ?')) {
+                                    setMatchEnCours(null);
+                                    setTimerActif(false);
+                                    setPhase('selection');
+                                }
+                            }}
+                                className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white py-4 rounded-xl font-bold touch-btn">
+                                ← Retour sans sauvegarder
+                            </button>
+                        </div>
+
+                        {/* Page plein écran zones */}
+                        <div className={`fullscreen-overlay page-zones-fullscreen ${showTerrain ? 'active' : ''}`}>
+                            <div className="text-white text-center text-2xl font-bold mb-6">
+                                🏸 Sélectionnez la zone
+                            </div>
+                            <div className="flex-1 grid grid-cols-2 gap-4 mb-4">
+                                {[
+                                    {id: 1, label: 'Avant Gauche', emoji: '⬆️', color: 'linear-gradient(135deg, #10b981, #059669)'},
+                                    {id: 2, label: 'Avant Droite', emoji: '⬆️', color: 'linear-gradient(135deg, #10b981, #059669)'},
+                                    {id: 3, label: 'Arrière Gauche', emoji: '⬇️', color: 'linear-gradient(135deg, #047857, #065f46)'},
+                                    {id: 4, label: 'Arrière Droite', emoji: '⬇️', color: 'linear-gradient(135deg, #047857, #065f46)'}
+                                ].map(zone => (
+                                    <button key={zone.id} onClick={() => {
+                                        const type = config.objetEnseignement === 'zones' ? 'zoneDangereuse' : 'zoneLibre';
+                                        ajouterPointAvecZone(showTerrain, type, zone.id);
+                                        setShowTerrain(false);
+                                    }} style={{background: zone.color}}
+                                        className="text-white rounded-2xl p-6 flex flex-col items-center justify-center gap-3 touch-btn"
+                                    >
+                                        <div className="text-4xl">{zone.emoji}</div>
+                                        <div className="text-lg font-bold">{zone.label}</div>
+                                        <div className="text-4xl font-extrabold">{zone.id}</div>
+                                    </button>
+                                ))}
+                            </div>
+                            <button onClick={() => setShowTerrain(false)}
+                                className="w-full bg-gray-600 text-white py-5 rounded-xl font-bold text-lg touch-btn">
+                                ✕ Annuler
+                            </button>
+                        </div>
+
+                        {/* Page plein écran erreurs service */}
+                        <div className={`fullscreen-overlay page-service-erreur-fullscreen ${showServiceErreur ? 'active' : ''}`}>
+                            <div className="text-white text-center text-2xl font-bold mb-6">
+                                ❌ Type d'erreur de service
+                            </div>
+                            <div className="flex-1 grid grid-cols-2 gap-4 mb-4">
+                                {[
+                                    {type: 'nonTouche', label: 'Non touché', desc: 'Volant non touché', emoji: '🏸', color: 'linear-gradient(135deg, #dc2626, #991b1b)'},
+                                    {type: 'riviere', label: 'Rivière', desc: 'Zone interdite', emoji: '🌊', color: 'linear-gradient(135deg, #ea580c, #c2410c)'},
+                                    {type: 'nonCroise', label: 'Non croisé', desc: 'Trajectoire incorrecte', emoji: '↗️', color: 'linear-gradient(135deg, #f97316, #ea580c)'},
+                                    {type: 'filet', label: 'Filet', desc: 'Ne passe pas le filet', emoji: '🥅', color: 'linear-gradient(135deg, #fb923c, #f97316)'}
+                                ].map(erreur => (
+                                    <button key={erreur.type} onClick={() => {
+                                        ajouterServiceRate(showServiceErreur, erreur.type);
+                                        setShowServiceErreur(false);
+                                    }} style={{background: erreur.color}}
+                                        className="text-white rounded-2xl p-5 flex flex-col items-center justify-center gap-2 text-center touch-btn"
+                                    >
+                                        <div className="text-4xl">{erreur.emoji}</div>
+                                        <div className="text-lg font-bold">{erreur.label}</div>
+                                        <div className="text-sm opacity-90">{erreur.desc}</div>
+                                    </button>
+                                ))}
+                            </div>
+                            <button onClick={() => setShowServiceErreur(false)}
+                                className="w-full bg-gray-600 text-white py-5 rounded-xl font-bold text-lg touch-btn">
+                                ✕ Annuler
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return null;
+        }
+
+        // Render
+        ReactDOM.createRoot(document.getElementById('root')).render(<BadmintonTracker />);
+        console.log('✅ Badminton Pro v3.0 chargé');
+
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(reg => console.log('✅ Service Worker enregistré'))
+                .catch(err => console.log('❌ Service Worker erreur:', err));
+        }
+    </script>
+</body>
+</html>
